@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-white text-slate-900;
+}
+
+.section-spacing {
+  @apply py-16 sm:py-20 lg:py-24;
+}
+
+.container-base {
+  @apply mx-auto w-full max-w-6xl px-6;
+}
