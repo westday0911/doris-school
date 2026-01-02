@@ -66,10 +66,10 @@ const testimonials = [
 
 export default function Home() {
   return (
-    <div className="bg-white">
-      <header className="border-b border-slate-100 bg-white/80 backdrop-blur">
+    <div className="relative">
+      <header className="border-b border-slate-200/50 bg-white/90 backdrop-blur-lg shadow-sm relative z-20">
         <div className="container-base flex h-16 items-center justify-between">
-          <div className="text-lg font-semibold text-slate-900">
+          <div className="text-lg font-semibold gradient-text-blue">
             Doris AI學院
           </div>
           <nav className="hidden items-center gap-6 text-sm text-slate-600 md:flex">
@@ -94,73 +94,62 @@ export default function Home() {
       </header>
 
       <main>
-        <section className="section-spacing" id="hero">
+        <section className="section-spacing bg-gradient-to-br from-blue-50/50 via-slate-50 to-indigo-50/30 relative overflow-hidden" id="hero">
           <div className="container-base grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="space-y-6">
+            <div className="space-y-6 relative z-10">
               <Badge>用 AI 和科技 解決問題</Badge>
               <div className="space-y-4">
-                <h1 className="text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">
-                  Doris AI學院
-                  <span className="block text-brand-600">
-                    打造能真正落地的 AI 學習與應用
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight">
+                  <span className="gradient-text">學習 AI</span>
+                  <span className="block mt-2 gradient-text-blue text-4xl sm:text-5xl lg:text-6xl">
+                  把想法變成真正跑得動的產品與流程
                   </span>
                 </h1>
-                <p className="text-lg text-slate-600">
+                <p className="text-lg sm:text-xl text-slate-700 font-medium">
                   從策略、工具到實戰案例，陪你一步步建立 AI
                   能力，讓團隊與個人都能快速看見成果。
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <Button size="lg">探索最新課程</Button>
+                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white border-0 shadow-lg">
+                  探索最新課程
+                </Button>
                 <Button variant="outline" size="lg">
                   下載課程企劃
                 </Button>
               </div>
-              <div className="flex items-center gap-6 text-sm text-slate-500">
-                <span>50+ 企業合作</span>
-                <span>1200+ 學員</span>
-                <span>8 週實戰陪跑</span>
+              <div className="flex items-center gap-6 text-sm font-medium">
+                <span className="text-slate-700">50+ 企業合作</span>
+                <span className="text-slate-700">1200+ 學員</span>
+                <span className="text-slate-700">8 週實戰陪跑</span>
               </div>
             </div>
             <div className="relative">
-              <div className="absolute -top-10 left-6 h-36 w-36 rounded-full bg-brand-200/70 blur-3xl" />
-              <div className="absolute bottom-4 right-0 h-40 w-40 rounded-full bg-sky-200/70 blur-3xl" />
-              <div className="relative rounded-[32px] border border-slate-200/70 bg-gradient-to-br from-white via-white to-brand-50 p-10 shadow-soft">
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between text-sm text-slate-500">
-                    <span>抽象插畫</span>
-                    <span>AI Flow</span>
-                  </div>
-                  <svg
-                    className="h-48 w-full"
-                    viewBox="0 0 400 200"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M20 120C80 20 160 20 220 80C280 140 340 140 380 60"
-                      stroke="#4A7DFF"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="80" cy="60" r="28" fill="#C4DBFF" />
-                    <circle cx="220" cy="110" r="40" fill="#E6EFFF" />
-                    <circle cx="320" cy="70" r="26" fill="#9DC3FF" />
-                  </svg>
-                  <div className="rounded-2xl bg-white/70 p-4 text-sm text-slate-600">
-                    以抽象插畫呈現 AI 思維流動，對齊 Notion 風格的溫潤質感。
-                  </div>
-                </div>
+              {/* 年輕人圖片 - 重疊在前面 */}
+
+              <img
+                src="/young.png"
+                alt="年輕人"
+                className="absolute -left-[10rem] -bottom-10 z-20 w-full "
+              />
+
+              {/* 原本的右側圖片區域 */}
+              <div className="relative mt-32 sm:mt-36 lg:mt-40">
+              <img
+                  src="/hero-right-image.png"
+                  alt="AI desk"
+                  className="w-full h-full object-cover "
+                />
               </div>
             </div>
           </div>
         </section>
 
-        <section className="section-spacing bg-slate-50" id="latest">
+        <section className="section-spacing bg-gradient-to-br from-slate-50 to-blue-50/40" id="latest">
           <div className="container-base space-y-10">
             <div className="flex flex-col gap-4">
               <Badge variant="muted">最新課程</Badge>
-              <h2 className="text-3xl font-semibold text-slate-900">
+              <h2 className="text-3xl font-bold gradient-text">
                 單一推出課程
               </h2>
               <p className="text-slate-600">
@@ -202,7 +191,7 @@ export default function Home() {
           <div className="container-base space-y-10">
             <div className="space-y-3">
               <Badge variant="muted">熱門課程</Badge>
-              <h2 className="text-3xl font-semibold text-slate-900">
+              <h2 className="text-3xl font-bold gradient-text">
                 所有課程 3 堂
               </h2>
               <p className="text-slate-600">
@@ -210,11 +199,18 @@ export default function Home() {
               </p>
             </div>
             <div className="grid gap-6 md:grid-cols-3">
-              {popularCourses.map((course) => (
-                <Card key={course.title} className="h-full">
+              {popularCourses.map((course, index) => (
+                <Card key={course.title} className="h-full overflow-hidden group hover:shadow-xl transition-shadow duration-300">
+                  <div className="h-48 overflow-hidden">
+                    <img
+                      src={`https://images.unsplash.com/photo-${index === 0 ? '1677442136019-21780ecad995' : index === 1 ? '1555949963-aa79dcee981c' : '1485828333669-bd5ecd0a37b0'}?w=600&h=400&fit=crop&crop=center`}
+                      alt={course.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                  </div>
                   <CardHeader>
                     <Badge>{course.tag}</Badge>
-                    <CardTitle className="mt-4 text-xl">
+                    <CardTitle className="mt-4 text-xl gradient-text-blue">
                       {course.title}
                     </CardTitle>
                     <CardDescription>{course.description}</CardDescription>
@@ -230,33 +226,18 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="section-spacing bg-slate-50" id="features">
+        <section className="section-spacing bg-gradient-to-br from-blue-50/30 to-slate-50" id="features">
           <div className="container-base grid gap-12 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="relative">
-              <div className="absolute -left-8 top-10 h-40 w-40 rounded-full bg-brand-200/60 blur-3xl" />
-              <div className="relative rounded-[32px] border border-slate-200/70 bg-white p-8 shadow-soft">
-                <div className="space-y-6">
-                  <p className="text-sm text-slate-500">學院特色插圖</p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-2xl bg-brand-50 p-4 text-sm text-brand-700">
-                      AI 策略
-                    </div>
-                    <div className="rounded-2xl bg-slate-100 p-4 text-sm text-slate-700">
-                      實作模板
-                    </div>
-                    <div className="rounded-2xl bg-slate-100 p-4 text-sm text-slate-700">
-                      專案陪跑
-                    </div>
-                    <div className="rounded-2xl bg-brand-50 p-4 text-sm text-brand-700">
-                      社群互助
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <img
+                src="https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=600&h=500&fit=crop&crop=center"
+                alt="AI 科技學習插圖"
+                className="w-full h-auto rounded-[32px] shadow-soft hover:shadow-xl transition-shadow duration-300"
+              />
             </div>
             <div className="space-y-6">
               <Badge variant="muted">學院特色</Badge>
-              <h2 className="text-3xl font-semibold text-slate-900">
+              <h2 className="text-3xl font-bold gradient-text">
                 把 AI 變成可行動的解決方案
               </h2>
               <p className="text-slate-600">
@@ -285,7 +266,7 @@ export default function Home() {
           <div className="container-base grid gap-10 lg:grid-cols-[1fr_1fr]">
             <div className="space-y-4">
               <Badge variant="muted">我是 Doris</Badge>
-              <h2 className="text-3xl font-semibold text-slate-900">
+              <h2 className="text-3xl font-bold gradient-text">
                 讓 AI 成為你的成長推進器
               </h2>
               <p className="text-slate-600">
@@ -295,21 +276,28 @@ export default function Home() {
               </p>
               <Button variant="outline">了解 Doris</Button>
             </div>
-            <Card className="flex flex-col justify-between bg-white">
+            <Card className="flex flex-col justify-between bg-white overflow-hidden">
+              <div className="h-48 overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&h=400&fit=crop&crop=center"
+                  alt="教學方式"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <CardHeader>
-                <CardTitle>我的教學方式</CardTitle>
+                <CardTitle className="gradient-text-blue">我的教學方式</CardTitle>
                 <CardDescription>
                   以 Notion 風格的結構化學習，搭配可落地的實作。
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-slate-600">
-                <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                <div className="rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border border-blue-100">
                   每週一次直播 + 影片回放
                 </div>
-                <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                <div className="rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border border-blue-100">
                   專屬學習筆記 + 工作表
                 </div>
-                <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                <div className="rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border border-blue-100">
                   社群討論 + 個別回饋
                 </div>
               </CardContent>
@@ -317,11 +305,11 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="section-spacing bg-slate-50" id="articles">
+        <section className="section-spacing bg-gradient-to-br from-slate-50 to-indigo-50/30" id="articles">
           <div className="container-base space-y-10">
             <div className="space-y-3">
               <Badge variant="muted">AI 學習文章列表</Badge>
-              <h2 className="text-3xl font-semibold text-slate-900">
+              <h2 className="text-3xl font-bold gradient-text">
                 精選內容，持續更新
               </h2>
               <p className="text-slate-600">
@@ -329,16 +317,25 @@ export default function Home() {
               </p>
             </div>
             <div className="grid gap-6 md:grid-cols-3">
-              {articles.map((article) => (
-                <Card key={article.title}>
+              {articles.map((article, index) => (
+                <Card key={article.title} className="overflow-hidden group hover:shadow-xl transition-shadow duration-300">
+                  <div className="h-40 overflow-hidden">
+                    <img
+                      src={`https://images.unsplash.com/photo-${index === 0 ? '1485828333669-bd5ecd0a37b0' : index === 1 ? '1451187580459-8049020e7369' : '1460925895917-afdab827c52f'}?w=600&h=400&fit=crop&crop=center`}
+                      alt={article.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                  </div>
                   <CardHeader>
-                    <CardTitle className="text-lg">
+                    <CardTitle className="text-lg gradient-text-blue">
                       {article.title}
                     </CardTitle>
                     <CardDescription>{article.excerpt}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button variant="ghost">閱讀文章</Button>
+                    <Button variant="ghost">
+                      閱讀文章
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
@@ -350,18 +347,25 @@ export default function Home() {
           <div className="container-base space-y-10">
             <div className="space-y-3">
               <Badge variant="muted">學員見證</Badge>
-              <h2 className="text-3xl font-semibold text-slate-900">
+              <h2 className="text-3xl font-bold gradient-text">
                 來自學員的真實回饋
               </h2>
             </div>
             <div className="grid gap-6 md:grid-cols-3">
-              {testimonials.map((testimonial) => (
-                <Card key={testimonial.name}>
+              {testimonials.map((testimonial, index) => (
+                <Card key={testimonial.name} className="text-center">
                   <CardHeader>
-                    <CardTitle className="text-lg">
+                    <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-4 border-blue-100">
+                      <img
+                        src={`https://images.unsplash.com/photo-${index === 0 ? '1494790108755-2616b612b786' : index === 1 ? '1472099645785-5658abf4ff4e' : '1438761681033-6461ffad8d80'}?w=100&h=100&fit=crop&crop=face`}
+                        alt={testimonial.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <CardTitle className="text-lg gradient-text-blue">
                       {testimonial.name}
                     </CardTitle>
-                    <CardDescription>{testimonial.quote}</CardDescription>
+                    <CardDescription className="text-center">{testimonial.quote}</CardDescription>
                   </CardHeader>
                 </Card>
               ))}
@@ -369,30 +373,32 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="section-spacing bg-brand-50" id="cta">
+        <section className="section-spacing bg-gradient-to-br from-brand-50 via-blue-50 to-indigo-50" id="cta">
           <div className="container-base">
-            <Card className="bg-white">
+            <Card className="bg-gradient-to-br from-white to-blue-50/50 border-2 border-blue-200">
               <CardHeader className="items-start gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="space-y-3">
-                  <Badge>準備開始你的 AI 學習旅程？</Badge>
-                  <CardTitle className="text-3xl">
+                  <Badge className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0">準備開始你的 AI 學習旅程？</Badge>
+                  <CardTitle className="text-3xl gradient-text">
                     加入 Doris AI學院
                   </CardTitle>
                   <CardDescription>
                     立即取得課程資訊與最新招生通知。
                   </CardDescription>
                 </div>
-                <Button size="lg">立即報名</Button>
+                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white border-0 shadow-lg">
+                  立即報名
+                </Button>
               </CardHeader>
             </Card>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-slate-100 bg-white">
+      <footer className="border-t border-slate-200/50 bg-gradient-to-t from-slate-50 to-white relative z-10">
         <div className="container-base flex flex-col gap-6 py-10 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-base font-semibold text-slate-900">
+            <div className="text-base font-semibold gradient-text-blue">
               Doris AI學院
             </div>
             <p>用 AI 和科技 解決問題</p>

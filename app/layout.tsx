@@ -17,7 +17,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-Hant" className={inter.variable}>
-      <body className="min-h-screen bg-white font-sans antialiased">
+      <body className="min-h-screen font-sans antialiased">
+        <div className="bg-shapes">
+          <div className="shape-3"></div>
+        </div>
         {children}
       </body>
     </html>

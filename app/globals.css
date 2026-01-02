@@ -7,13 +7,85 @@
 }
 
 body {
-  @apply bg-white text-slate-900;
+  @apply bg-gradient-to-br from-slate-50 via-blue-50/20 to-slate-100 text-slate-900;
+  background-attachment: fixed;
+  position: relative;
+}
+
+/* 矩形色塊背景 */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(3deg); }
+}
+
+.bg-shapes {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-shapes::before {
+  content: '';
+  position: absolute;
+  top: 15%;
+  right: 8%;
+  width: 180px;
+  height: 180px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(30, 58, 138, 0.08));
+  border-radius: 24px;
+  transform: rotate(-12deg);
+  animation: float 8s ease-in-out infinite;
+}
+
+.bg-shapes::after {
+  content: '';
+  position: absolute;
+  bottom: 20%;
+  left: 5%;
+  width: 220px;
+  height: 150px;
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.1), rgba(59, 130, 246, 0.06));
+  border-radius: 28px;
+  transform: rotate(18deg);
+  animation: float 10s ease-in-out infinite reverse;
+}
+
+.bg-shapes .shape-3 {
+  position: absolute;
+  top: 60%;
+  right: 15%;
+  width: 140px;
+  height: 140px;
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.1), rgba(17, 24, 39, 0.08));
+  border-radius: 20px;
+  transform: rotate(25deg);
+  animation: float 7s ease-in-out infinite;
 }
 
 .section-spacing {
-  @apply py-16 sm:py-20 lg:py-24;
+  @apply py-16 sm:py-20 lg:py-24 relative;
 }
 
 .container-base {
-  @apply mx-auto w-full max-w-6xl px-6;
+  @apply mx-auto w-full max-w-6xl px-6 relative z-10;
+}
+
+/* AI科技感漸層文字 */
+.gradient-text {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 50%, #0f172a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-blue {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1e40af 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
