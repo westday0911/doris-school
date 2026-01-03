@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,124 +12,62 @@ import {
 } from "@/components/ui/card";
 import { BrowserMockup } from "@/components/BrowserMockup";
 import Link from "next/link";
-
-const latestCourse = {
-  title: "Vibe Coding 系統實戰課",
-  description:
-    "掌握最新的 Vibe Coding 趨勢，從系統架構到實戰開發，打造具備極致體驗的現代化應用。",
-  date: "2025 春季招生",
-  level: "進階實戰",
-};
-
-const popularCourses = [
-  {
-    title: "Vibe Coding 系統實戰課",
-    description: "掌握最新的 Vibe Coding 趨勢，打造具備極致體驗的現代化應用。",
-    tag: "進階課",
-    level: "進階",
-    duration: "12 小時",
-    originalPrice: "NT$ 12,800",
-    discountPrice: "NT$ 8,800",
-    image: "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=600&h=400&fit=crop&crop=center"
-  },
-  {
-    title: "AI 自動化生產力",
-    description: "用 No-code 與 AI 工具打造高效率工作流程。",
-    tag: "效率課",
-    level: "入門",
-    duration: "8 小時",
-    originalPrice: "NT$ 6,800",
-    discountPrice: "NT$ 4,500",
-    image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=600&h=400&fit=crop&crop=center"
-  },
-  {
-    title: "生成式 AI 商業應用",
-    description: "打造可複製的 AI 變現模式，快速驗證市場。",
-    tag: "商業課",
-    level: "中級",
-    duration: "10 小時",
-    originalPrice: "NT$ 9,800",
-    discountPrice: "NT$ 6,900",
-    image: "https://images.unsplash.com/photo-1485828333669-bd5ecd0a37b0?w=600&h=400&fit=crop&crop=center"
-  },
-];
-
-const articles = [
-  {
-    title: "如何用 AI 做市場研究？",
-    excerpt: "這篇文章將深入探討 3 個高效的提示詞框架，協助你在五分鐘內產出具備商業價值的市場洞察報告與競爭對手分析...",
-    category: "實戰教學",
-    tags: ["Prompt Engineering", "市場分析"],
-    date: "2024-03-20",
-    image: "https://images.unsplash.com/photo-1485828333669-bd5ecd0a37b0?w=600&h=400&fit=crop&crop=center"
-  },
-  {
-    title: "建立你的 AI 學習路徑",
-    excerpt: "從零基礎到能獨立開發 AI 工作流，你需要掌握的核心能力圖譜。我們整理了 2024 年最值得投資的學習清單與資源...",
-    category: "學習指南",
-    tags: ["學習路徑", "心法"],
-    date: "2024-03-15",
-    image: "https://images.unsplash.com/photo-1451187580459-8049020e7369?w=600&h=400&fit=crop&crop=center"
-  },
-  {
-    title: "AI 專案落地的 5 個關鍵步驟",
-    excerpt: "為什麼 80% 的 AI 專案都停留在 Demo 階段？本文將揭秘企業級 AI 應用從概念驗證到真正推進生產流程的標準作業程序...",
-    category: "商業應用",
-    tags: ["專案管理", "企業導入"],
-    date: "2024-03-10",
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop&crop=center"
-  },
-];
-
-const testimonials = [
-  {
-    name: "陳雅婷 · 產品經理",
-    quote: "課程內容非常實戰，讓我把 AI 變成工作流程的一部分。",
-  },
-  {
-    name: "黃志明 · 創業者",
-    quote: "Doris 的拆解方式清楚又有邏輯，團隊效率提升非常明顯。",
-  },
-  {
-    name: "李小芸 · 行銷專家",
-    quote: "我第一次感受到 AI 學習不再是冷冰冰的技術，而是解決問題的方法。",
-  },
-];
+import { Navbar } from "@/components/Navbar";
+import { supabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
+  const [courses, setCourses] = useState<any[]>([]);
+  const [articles, setArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      const [coursesRes, articlesRes] = await Promise.all([
+        supabase.from('courses').select('*').limit(3),
+        supabase.from('articles').select('*').order('date', { ascending: false }).limit(3)
+      ]);
+
+      if (!coursesRes.error) setCourses(coursesRes.data || []);
+      if (!articlesRes.error) setArticles(articlesRes.data || []);
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  const latestCourse = courses.find(c => c.slug === 'vibe-coding') || courses[0] || {
+    title: "Vibe Coding 系統實戰課",
+    description: "掌握最新的 Vibe Coding 趨勢，從系統架構到實戰開發，打造具備極致體驗的現代化應用。",
+    tag: "進階課",
+    level: "進階實戰",
+    duration: "12 小時",
+    original_price: 12800,
+    discount_price: 8800,
+    image_url: "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=800&h=1000&fit=crop&crop=center"
+  };
+
+  const testimonials = [
+    {
+      name: "陳雅婷 · 產品經理",
+      quote: "課程內容非常實戰，讓我把 AI 變成工作流程的一部分。",
+    },
+    {
+      name: "黃志明 · 創業者",
+      quote: "Doris 的拆解方式清楚又有邏輯，團隊效率提升非常明顯。",
+    },
+    {
+      name: "李小芸 · 行銷專家",
+      quote: "我第一次感受到 AI 學習不再是冷冰冰的技術，而是解決問題的方法。",
+    },
+  ];
+
   return (
     <div className="relative">
-      <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="container-base flex h-16 items-center justify-between">
-          <Link href="/" className="text-lg font-bold tracking-tight text-slate-950">
-            Doris AI學院
-          </Link>
-          <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-            <Link className="transition-colors hover:text-slate-950" href="/courses">
-              熱門課程
-            </Link>
-            <Link className="transition-colors hover:text-slate-950" href="/blog">
-              AI 學習文章
-            </Link>
-            <Link className="transition-colors hover:text-slate-950" href="/tools">
-              AI 工具
-            </Link>
-            <Link className="transition-colors hover:text-slate-950" href="/services/consulting">
-              服務
-            </Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <Link href="/auth/login" className="hidden text-sm font-medium text-slate-600 hover:text-slate-950 sm:block">
-              登入
-            </Link>
-            <Button size="sm" asChild>
-              <Link href="/auth/register">立即加入</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main>
+        {/* Hero Section */}
         <section className="section-spacing bg-white overflow-visible min-h-[600px] lg:min-h-[700px] pb-32 lg:pb-40" id="hero">
           <div className="container-base relative">
             <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr]">
@@ -145,8 +86,8 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button size="lg" className="shadow-md">
-                    探索最新課程
+                  <Button size="lg" className="shadow-md" asChild>
+                    <Link href="/courses">探索最新課程</Link>
                   </Button>
                   <Button variant="outline" size="lg">
                     下載課程企劃
@@ -160,7 +101,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Browser Mockup - 放在右邊 */}
+            {/* Browser Mockup */}
             <div className="absolute top-8 right-4 lg:top-16 lg:right-8 z-30 w-[400px] sm:w-[500px] lg:w-[600px]" id="browser-mockup">
               <BrowserMockup 
                 images={[
@@ -171,8 +112,6 @@ export default function Home() {
                 ]}
                 autoSlideInterval={3000}
               />
-              
-              {/* 連接線終點 */}
               <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-slate-200 border border-slate-300 shadow-sm z-10">
                 <div className="absolute inset-0 rounded-full bg-slate-300 animate-ping"></div>
               </div>
@@ -185,8 +124,6 @@ export default function Home() {
                 alt="年輕人"
                 className="w-full h-auto drop-shadow-2xl hover:scale-105 transition-all duration-700"
               />
-              
-              {/* 連接線起點 */}
               <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-slate-200 border border-slate-300 shadow-sm z-10">
                 <div className="absolute inset-0 rounded-full bg-slate-300 animate-ping"></div>
               </div>
@@ -222,6 +159,7 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Latest Course Section */}
         <section className="section-spacing bg-slate-50/30 overflow-hidden" id="latest">
           <div className="container-base">
             <div className="grid gap-12 lg:grid-cols-[1fr_0.8fr] items-center">
@@ -242,7 +180,7 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider">開課日期</h4>
-                    <p className="text-lg font-bold text-slate-900">{latestCourse.date}</p>
+                    <p className="text-lg font-bold text-slate-900">2025 春季招生</p>
                   </div>
                   <div className="space-y-2">
                     <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider">適合對象</h4>
@@ -250,25 +188,8 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">你將學到：</h4>
-                  <ul className="grid sm:grid-cols-2 gap-3">
-                    {[
-                      "Vibe Coding 核心思維",
-                      "系統架構深度拆解",
-                      "實戰開發工作流",
-                      "現代化 UI/UX 整合"
-                    ].map((item) => (
-                      <li key={item} className="flex items-center gap-2 text-slate-600">
-                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                        <span className="text-sm font-medium">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
                 <div className="pt-4">
-                  <Link href="/courses/vibe-coding">
+                  <Link href={`/courses/${latestCourse.slug}`}>
                     <Button size="lg" className="h-14 px-8 text-lg font-bold bg-slate-950 text-white hover:bg-slate-800 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1">
                       立即報名課程
                     </Button>
@@ -277,27 +198,23 @@ export default function Home() {
               </div>
 
               <div className="relative group">
-                <div className="absolute -inset-4 bg-gradient-to-tr from-blue-500/10 to-indigo-500/10 rounded-[2rem] blur-2xl group-hover:opacity-75 transition-opacity" />
-                <Card className="relative border-slate-200 shadow-2xl overflow-hidden rounded-[2rem] bg-white">
+                <div className="absolute -inset-4 bg-gradient-to-tr from-blue-500/10 to-indigo-500/10 rounded-2xl blur-2xl group-hover:opacity-75 transition-opacity" />
+                <Card className="relative border-slate-200 shadow-2xl overflow-hidden rounded-2xl bg-white">
                   <div className="aspect-[4/5] overflow-hidden">
                     <img
-                      src="https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=800&h=1000&fit=crop&crop=center"
+                      src={latestCourse.image_url || "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=800&h=1000&fit=crop&crop=center"}
                       alt={latestCourse.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60" />
-                  <div className="absolute bottom-8 left-8 right-8">
-                    <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl">
-                      <p className="text-white text-sm font-medium text-center">限額 50 名，額滿即止</p>
-                    </div>
-                  </div>
                 </Card>
               </div>
             </div>
           </div>
         </section>
 
+        {/* Popular Courses Section */}
         <section className="section-spacing bg-white" id="popular">
           <div className="container-base space-y-8">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -311,54 +228,62 @@ export default function Home() {
                 從基礎到進階，陪你一步步建立 AI 能力，讓團隊都能快速看見成果。
               </p>
             </div>
+            
             <div className="grid gap-6 md:grid-cols-3">
-              {popularCourses.map((course) => (
-                <Card key={course.title} className="flex flex-col h-full overflow-hidden group hover:shadow-lg transition-all duration-300 border-slate-200 rounded-xl bg-white">
-                  <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={course.image}
-                      alt={course.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute top-3 left-3 flex gap-2">
-                      <Badge className="bg-black/80 backdrop-blur-md text-white border-0 text-[10px] px-2 py-0">
-                        {course.tag}
-                      </Badge>
-                      <Badge variant="muted" className="bg-white/90 backdrop-blur-md text-slate-900 border-0 text-[10px] px-2 py-0">
-                        {course.level}
-                      </Badge>
-                    </div>
-                  </div>
-                  <CardHeader className="p-4 space-y-2">
-                    <div className="flex items-center text-[11px] font-medium text-slate-400">
-                      <span>{course.duration}</span>
-                    </div>
-                    <CardTitle className="text-lg font-bold text-slate-950 leading-tight group-hover:text-blue-600 transition-colors">
-                      {course.title}
-                    </CardTitle>
-                    <CardDescription className="text-slate-500 line-clamp-2 text-xs leading-normal">
-                      {course.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-5 mt-auto">
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-slate-400 line-through leading-none mb-1">{course.originalPrice}</span>
-                        <span className="text-xl font-bold text-slate-950 leading-none">{course.discountPrice}</span>
+              {loading ? (
+                Array(3).fill(0).map((_, i) => (
+                  <div key={i} className="h-80 rounded-xl bg-slate-50 animate-pulse" />
+                ))
+              ) : (
+                courses.map((course) => (
+                  <Card key={course.id} className="flex flex-col h-full overflow-hidden group hover:shadow-lg transition-all duration-300 border-slate-200 rounded-xl bg-white">
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={course.image_url}
+                        alt={course.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <Badge className="bg-black/80 backdrop-blur-md text-white border-0 text-[10px] px-2 py-0">
+                          {course.tag}
+                        </Badge>
+                        <Badge variant="muted" className="bg-white/90 backdrop-blur-md text-slate-900 border-0 text-[10px] px-2 py-0">
+                          {course.level}
+                        </Badge>
                       </div>
-                      <Link href="/courses/vibe-coding">
-                        <Button size="sm" variant="default" className="rounded-lg h-8 text-xs">
-                          立即查看
-                        </Button>
-                      </Link>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    <CardHeader className="p-4 space-y-2">
+                      <div className="flex items-center text-[11px] font-medium text-slate-400">
+                        <span>{course.duration}</span>
+                      </div>
+                      <CardTitle className="text-lg font-bold text-slate-950 leading-tight group-hover:text-blue-600 transition-colors">
+                        {course.title}
+                      </CardTitle>
+                      <CardDescription className="text-slate-500 line-clamp-2 text-xs leading-normal">
+                        {course.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-5 mt-auto">
+                      <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-slate-400 line-through leading-none mb-1">NT$ {course.original_price?.toLocaleString()}</span>
+                          <span className="text-xl font-bold text-slate-950 leading-none">NT$ {course.discount_price?.toLocaleString()}</span>
+                        </div>
+                        <Link href={`/courses/${course.slug}`}>
+                          <Button size="sm" variant="default" className="rounded-lg h-8 text-xs">
+                            立即查看
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
         </section>
 
+        {/* Founder Section */}
         <section className="section-spacing bg-white overflow-hidden" id="about">
           <div className="container-base">
             <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
@@ -368,7 +293,7 @@ export default function Home() {
                 <img
                   src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&h=1000&fit=crop&crop=face"
                   alt="Founder Doris"
-                  className="relative z-10 w-full h-auto rounded-[2.5rem] shadow-2xl grayscale-[0.2] hover:grayscale-0 transition-all duration-700"
+                  className="relative z-10 w-full h-auto rounded-2xl shadow-2xl grayscale-[0.2] hover:grayscale-0 transition-all duration-700"
                 />
               </div>
               
@@ -409,15 +334,16 @@ export default function Home() {
 
                 <div className="flex items-center gap-8 pt-4">
                   <Button className="rounded-full h-14 px-10 shadow-xl hover:shadow-2xl transition-all">合作洽談</Button>
-                  <a href="#" className="text-sm font-bold text-slate-950 hover:text-blue-600 transition-colors border-b-2 border-slate-950 hover:border-blue-600 pb-1">
+                  <Link href="/blog" className="text-sm font-bold text-slate-950 hover:text-blue-600 transition-colors border-b-2 border-slate-950 hover:border-blue-600 pb-1">
                     個人專欄 →
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
+        {/* Articles Section */}
         <section className="section-spacing bg-white" id="articles">
           <div className="container-base space-y-10">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -436,47 +362,46 @@ export default function Home() {
                 </Button>
               </Link>
             </div>
+            
             <div className="grid gap-6 md:grid-cols-3">
-              {articles.map((article) => (
-                <Card key={article.title} className="group overflow-hidden border-slate-200 rounded-lg hover:shadow-md transition-all duration-300 flex flex-col">
-                  <div className="relative aspect-[16/9] overflow-hidden border-b border-slate-100">
-                    <img
-                      src={article.image}
-                      alt={article.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute top-3 left-3">
-                      <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-slate-200 text-[10px] px-2 py-0.5 rounded-sm">
-                        {article.category}
-                      </Badge>
+              {loading ? (
+                Array(3).fill(0).map((_, i) => (
+                  <div key={i} className="h-64 rounded-xl bg-slate-50 animate-pulse" />
+                ))
+              ) : (
+                articles.map((article) => (
+                  <Card key={article.id} className="group overflow-hidden border-slate-200 rounded-lg hover:shadow-md transition-all duration-300 flex flex-col">
+                    <div className="relative aspect-[16/9] overflow-hidden border-b border-slate-100">
+                      <img
+                        src={article.image}
+                        alt={article.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute top-3 left-3">
+                        <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-slate-200 text-[10px] px-2 py-0.5 rounded-sm">
+                          {article.category}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                  <CardHeader className="p-4 space-y-2">
-                    <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400">
-                      <span>{article.date}</span>
-                    </div>
-                    <CardTitle className="text-base font-bold text-slate-950 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[3rem]">
-                      {article.title}
-                    </CardTitle>
-                    <CardDescription className="text-slate-500 text-[13px] leading-relaxed line-clamp-3">
-                      {article.excerpt}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4 mt-auto">
-                    <div className="flex flex-wrap gap-1.5">
-                      {article.tags.map(tag => (
-                        <span key={tag} className="text-[10px] text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded-sm border border-slate-100">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    <CardHeader className="p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400">
+                        <span>{article.date}</span>
+                      </div>
+                      <CardTitle className="text-base font-bold text-slate-950 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[3rem]">
+                        {article.title}
+                      </CardTitle>
+                      <CardDescription className="text-slate-500 text-[13px] leading-relaxed line-clamp-3">
+                        {article.excerpt}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
         </section>
 
+        {/* Features Section */}
         <section className="section-spacing bg-white" id="features">
           <div className="container-base">
             <div className="max-w-[800px] mx-auto text-center space-y-4 mb-16">
@@ -517,6 +442,7 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Testimonials */}
         <section className="section-spacing bg-white" id="testimonials">
           <div className="container-base space-y-12">
             <div className="text-center space-y-4">
@@ -547,9 +473,10 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Newsletter Section */}
         <section className="section-spacing bg-white" id="newsletter">
           <div className="container-base">
-            <div className="relative rounded-[3rem] bg-slate-950 p-8 md:p-16 overflow-hidden">
+            <div className="relative rounded-3xl bg-slate-950 p-8 md:p-16 overflow-hidden">
               <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-blue-600/20 to-transparent pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-gradient-to-tr from-indigo-600/10 to-transparent pointer-events-none" />
               
@@ -590,6 +517,7 @@ export default function Home() {
           </div>
         </section>
 
+        {/* CTA Section */}
         <section className="section-spacing bg-slate-950" id="cta">
           <div className="container-base">
             <div className="rounded-3xl bg-white border border-slate-200 p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl">
@@ -602,14 +530,15 @@ export default function Home() {
                   立即取得課程資訊與最新招生通知。
                 </p>
               </div>
-              <Button size="lg" className="px-12 h-14 text-lg">
-                立即報名
+              <Button size="lg" className="px-12 h-14 text-lg" asChild>
+                <Link href="/courses">立即報名</Link>
               </Button>
             </div>
           </div>
         </section>
       </main>
 
+      {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-12">
         <div className="container-base flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div className="space-y-2">

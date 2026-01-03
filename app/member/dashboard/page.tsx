@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -10,178 +10,329 @@ import {
   CardTitle,
   CardContent,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, CreditCard, User, LogOut } from "lucide-react";
+import { BookOpen, CreditCard, User, LogOut, Loader2, ChevronRight, Settings } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { Navbar } from "@/components/Navbar";
+import { useAuth } from "@/components/providers/auth-provider";
+
+type DashboardSection = "courses" | "orders" | "profile";
 
 export default function MemberDashboard() {
-  const [profile, setProfile] = useState<any>(null);
+  const { user, profile, loading: authLoading, signOut } = useAuth();
+  const [activeSection, setActiveSection] = useState<DashboardSection>("courses");
   const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [userCourses, setUserCourses] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      // 獲取目前登入的使用者
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        // 獲取個人檔案
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        setProfile(profileData || { name: user.email?.split('@')[0], email: user.email });
-
-        // 獲取訂單紀錄
-        const { data: ordersData } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        
-        setOrders(ordersData || []);
-      }
-      setLoading(false);
+    if (user) {
+      fetchDashboardData();
     }
-    fetchData();
-  }, []);
+  }, [user]);
+
+  const fetchDashboardData = async () => {
+    setLoadingData(true);
+    
+    // 獲取訂單紀錄
+    const ordersPromise = supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: false });
+
+    // 獲取已購買課程 (關聯 courses 表)
+    const coursesPromise = supabase
+      .from('user_courses')
+      .select(`
+        *,
+        courses (*)
+      `)
+      .eq('user_id', user?.id);
+
+    const [ordersRes, coursesRes] = await Promise.all([ordersPromise, coursesPromise]);
+    
+    if (!ordersRes.error) setOrders(ordersRes.data || []);
+    if (!coursesRes.error) setUserCourses(coursesRes.data || []);
+    
+    setLoadingData(false);
+  };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     window.location.href = '/';
   };
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">載入中...</div>;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <Loader2 className="animate-spin text-blue-600" size={32} />
+      </div>
+    );
+  }
+
+  if (!user) {
+    if (typeof window !== 'undefined') window.location.href = '/auth/login';
+    return null;
   }
 
   return (
-    <div className="relative bg-white min-h-screen">
-      <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="container-base flex h-16 items-center justify-between">
-          <Link href="/" className="text-lg font-bold tracking-tight text-slate-950">
-            Doris AI學院
-          </Link>
-          <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-            <Link className="transition-colors hover:text-slate-950" href="/courses">熱門課程</Link>
-            <Link className="transition-colors hover:text-slate-950" href="/blog">AI 學習文章</Link>
-            <Link className="transition-colors hover:text-slate-950" href="/tools">AI 工具</Link>
-            <Link className="transition-colors hover:text-slate-950" href="/services/consulting">服務</Link>
-          </nav>
-          <div className="flex items-center gap-4">
-             <div className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
-               {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : profile?.name?.[0]?.toUpperCase()}
-             </div>
-             <span className="text-sm font-bold hidden sm:inline-block">{profile?.name}</span>
-          </div>
-        </div>
-      </header>
+    <div className="relative bg-slate-50/50 min-h-screen">
+      <Navbar />
 
       <main className="py-12">
         <div className="container-base">
-          <div className="grid lg:grid-cols-[240px_1fr] gap-12">
+          <div className="grid lg:grid-cols-[280px_1fr] gap-8 items-start">
             {/* Sidebar */}
-            <aside className="space-y-6">
-              <div className="flex items-center gap-4 p-2">
-                <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 text-lg font-bold border-2 border-white shadow-sm overflow-hidden">
-                  {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : profile?.name?.[0]?.toUpperCase()}
+            <aside className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm sticky top-24">
+              <div className="flex flex-col items-center text-center pb-8 border-b border-slate-100 mb-6">
+                <div className="h-20 w-20 rounded-full bg-slate-900 flex items-center justify-center text-white text-2xl font-bold border-4 border-white shadow-xl overflow-hidden mb-4">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} className="w-full h-full object-cover" />
+                  ) : (
+                    profile?.name?.[0]?.toUpperCase()
+                  )}
                 </div>
-                <div>
-                  <h2 className="font-bold text-slate-950">{profile?.name}</h2>
-                  <p className="text-xs text-slate-500">{profile?.role || '標準會員'}</p>
-                </div>
+                <h2 className="font-bold text-lg text-slate-950">{profile?.name || user.email?.split('@')[0]}</h2>
+                <Badge variant="muted" className="mt-1 font-bold text-[10px] uppercase tracking-wider">
+                  {profile?.role === 'admin' ? '管理員' : '正式學員'}
+                </Badge>
               </div>
               
               <nav className="space-y-1">
-                <Button variant="ghost" className="w-full justify-start gap-3 font-bold text-slate-950 bg-slate-50">
-                  <BookOpen size={18} /> 我的課程
-                </Button>
-                <Button variant="ghost" className="w-full justify-start gap-3 font-medium text-slate-500 hover:text-slate-950">
-                  <CreditCard size={18} /> 訂單紀錄
-                </Button>
-                <Button variant="ghost" className="w-full justify-start gap-3 font-medium text-slate-500 hover:text-slate-950">
-                  <User size={18} /> 個人資料
-                </Button>
-                <Button onClick={handleLogout} variant="ghost" className="w-full justify-start gap-3 font-medium text-red-500 hover:text-red-600 hover:bg-red-50 mt-8">
-                  <LogOut size={18} /> 登出帳號
-                </Button>
+                <button 
+                  onClick={() => setActiveSection("courses")}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+                    activeSection === "courses" 
+                    ? "bg-slate-950 text-white shadow-lg shadow-slate-950/20 font-bold" 
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-950 font-medium"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <BookOpen size={18} />
+                    <span>我的課程</span>
+                  </div>
+                  <ChevronRight size={14} className={activeSection === "courses" ? "opacity-100" : "opacity-0"} />
+                </button>
+
+                <button 
+                  onClick={() => setActiveSection("orders")}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+                    activeSection === "orders" 
+                    ? "bg-slate-950 text-white shadow-lg shadow-slate-950/20 font-bold" 
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-950 font-medium"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <CreditCard size={18} />
+                    <span>訂單紀錄</span>
+                  </div>
+                  <ChevronRight size={14} className={activeSection === "orders" ? "opacity-100" : "opacity-0"} />
+                </button>
+
+                <button 
+                  onClick={() => setActiveSection("profile")}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+                    activeSection === "profile" 
+                    ? "bg-slate-950 text-white shadow-lg shadow-slate-950/20 font-bold" 
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-950 font-medium"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <User size={18} />
+                    <span>個人資料</span>
+                  </div>
+                  <ChevronRight size={14} className={activeSection === "profile" ? "opacity-100" : "opacity-0"} />
+                </button>
+
+                <div className="pt-6 mt-6 border-t border-slate-100">
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-red-500 hover:bg-red-50 transition-all"
+                  >
+                    <LogOut size={18} />
+                    <span>登出帳號</span>
+                  </button>
+                </div>
               </nav>
             </aside>
 
-            {/* Content */}
+            {/* Content Area */}
             <div className="space-y-8">
-              <Tabs defaultValue="courses" className="w-full">
-                <TabsList className="bg-slate-100 p-1 rounded-xl mb-8">
-                  <TabsTrigger value="courses" className="rounded-lg px-8 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">我的課程</TabsTrigger>
-                  <TabsTrigger value="orders" className="rounded-lg px-8 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">訂單紀錄</TabsTrigger>
-                  <TabsTrigger value="profile" className="rounded-lg px-8 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">個人資料</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="courses" className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {/* 這部分通常需要一個 user_courses 的關聯表 */}
-                    <p className="text-slate-400 text-sm">目前尚無已購買課程。</p>
+              {activeSection === "courses" && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h1 className="text-2xl font-black text-slate-950">我的課程</h1>
+                    <span className="text-sm text-slate-400 font-bold">{userCourses.length} 門課程</span>
                   </div>
-                </TabsContent>
 
-                <TabsContent value="orders" className="space-y-4">
-                  {orders.map((order) => (
-                    <Card key={order.id} className="border-slate-100">
-                      <div className="p-6">
-                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                          <div className="space-y-1">
-                            <p className="text-xs text-slate-400">訂單編號: {order.order_number || order.id.substring(0, 12)}</p>
-                            <p className="font-bold">{order.items_summary || '課程購買'}</p>
-                            <p className="text-sm text-slate-500">{new Date(order.created_at).toLocaleDateString()}</p>
-                          </div>
-                          <div className="flex items-center justify-between sm:text-right gap-8">
-                            <div className="space-y-1">
-                              <p className="text-xs text-slate-400">金額</p>
-                              <p className="font-bold">NT$ {order.total_amount?.toLocaleString()}</p>
-                            </div>
-                            <Badge className={order.status === "paid" ? "bg-green-50 text-green-700 border-green-100" : "bg-amber-50 text-amber-700 border-amber-100"}>
-                              {order.status === "paid" ? "付款成功" : "等待付款"}
-                            </Badge>
-                          </div>
-                        </div>
+                  {loadingData ? (
+                    <div className="flex items-center justify-center py-20 text-slate-400">
+                      <Loader2 className="animate-spin mr-2" /> 資料讀取中...
+                    </div>
+                  ) : userCourses.length === 0 ? (
+                    <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-20 text-center">
+                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <BookOpen className="text-slate-300" size={32} />
                       </div>
-                    </Card>
-                  ))}
-                  {orders.length === 0 && <p className="text-slate-400 text-sm">尚無訂單紀錄。</p>}
-                </TabsContent>
+                      <h3 className="font-bold text-slate-900 mb-2">目前尚無已購買課程</h3>
+                      <p className="text-sm text-slate-500 mb-8">趕快去探索適合您的 AI 課程吧！</p>
+                      <Link href="/courses">
+                        <Button className="font-bold px-8">探索課程</Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {userCourses.map((uc) => (
+                        <Card key={uc.id} className="overflow-hidden border-slate-200 rounded-3xl hover:shadow-xl transition-all duration-500 group">
+                          <div className="aspect-video relative overflow-hidden">
+                            <img 
+                              src={uc.courses?.image_url} 
+                              alt={uc.courses?.title} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            />
+                            <div className="absolute top-4 left-4">
+                              <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-0 font-bold">
+                                {uc.progress}% 已完成
+                              </Badge>
+                            </div>
+                          </div>
+                          <CardHeader className="p-6">
+                            <CardTitle className="text-lg font-bold text-slate-950 group-hover:text-blue-600 transition-colors">
+                              {uc.courses?.title}
+                            </CardTitle>
+                            <div className="w-full bg-slate-100 h-1.5 rounded-full mt-4 overflow-hidden">
+                              <div 
+                                className="bg-blue-600 h-full rounded-full transition-all duration-1000" 
+                                style={{ width: `${uc.progress}%` }}
+                              />
+                            </div>
+                          </CardHeader>
+                          <CardContent className="px-6 pb-6">
+                            <Link href={`/courses/${uc.courses?.slug}`}>
+                              <Button variant="default" className="w-full font-bold bg-slate-950 rounded-xl">繼續學習</Button>
+                            </Link>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
-                <TabsContent value="profile" className="space-y-6">
-                  <Card className="border-slate-200">
-                    <CardHeader>
-                      <CardTitle>個人基本資料</CardTitle>
+              {activeSection === "orders" && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h1 className="text-2xl font-black text-slate-950">訂單紀錄</h1>
+                  </div>
+
+                  {loadingData ? (
+                    <div className="flex items-center justify-center py-20 text-slate-400">
+                      <Loader2 className="animate-spin mr-2" /> 資料讀取中...
+                    </div>
+                  ) : orders.length === 0 ? (
+                    <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-20 text-center text-slate-400">
+                      尚無訂單紀錄。
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {orders.map((order) => (
+                        <Card key={order.id} className="border-slate-200 rounded-2xl overflow-hidden bg-white hover:shadow-md transition-all">
+                          <div className="p-6">
+                            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                              <div className="space-y-1">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                  訂單編號: {order.order_number || order.id.substring(0, 12)}
+                                </p>
+                                <p className="font-bold text-slate-950">{order.items_summary || '課程購買'}</p>
+                                <p className="text-xs text-slate-500 font-medium">
+                                  購買日期: {new Date(order.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className="flex items-center justify-between sm:text-right gap-8">
+                                <div className="space-y-1">
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">金額</p>
+                                  <p className="font-black text-slate-950">NT$ {order.total_amount?.toLocaleString()}</p>
+                                </div>
+                                <Badge className={`rounded-lg px-3 py-1 border-0 font-bold ${
+                                  order.status === "paid" 
+                                  ? "bg-emerald-50 text-emerald-700" 
+                                  : "bg-amber-50 text-amber-700"
+                                }`}>
+                                  {order.status === "paid" ? "付款成功" : "等待付款"}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeSection === "profile" && (
+                <div className="space-y-6">
+                  <h1 className="text-2xl font-black text-slate-950">個人資料設定</h1>
+                  <Card className="border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                    <CardHeader className="p-8 border-b border-slate-50">
+                      <CardTitle className="text-xl font-bold">基本資料</CardTitle>
                       <CardDescription>管理您的帳號設定與聯絡資訊</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="grid sm:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">姓名</label>
-                          <input className="w-full px-4 py-2 rounded-lg border border-slate-200" defaultValue={profile?.name} />
+                    <CardContent className="p-8 space-y-8">
+                      <div className="flex items-center gap-8 mb-8">
+                        <div className="relative group">
+                          <div className="h-24 w-24 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 text-2xl font-bold border-4 border-white shadow-lg overflow-hidden">
+                            {profile?.avatar_url ? (
+                              <img src={profile.avatar_url} className="w-full h-full object-cover" />
+                            ) : (
+                              profile?.name?.[0]?.toUpperCase()
+                            )}
+                          </div>
+                          <button className="absolute bottom-0 right-0 p-2 bg-slate-950 text-white rounded-full shadow-lg hover:scale-110 transition-all border-2 border-white">
+                            <Settings size={14} />
+                          </button>
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">電子郵件</label>
-                          <input className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-500" defaultValue={profile?.email} disabled />
-                        </div>
-                        <div className="space-y-2 sm:col-span-2">
-                          <label className="text-sm font-medium">自我介紹</label>
-                          <textarea className="w-full px-4 py-2 rounded-lg border border-slate-200 h-32" placeholder="分享一些關於您的事情..." defaultValue={profile?.bio} />
+                        <div className="space-y-1">
+                          <p className="text-sm font-bold text-slate-900">大頭照</p>
+                          <p className="text-xs text-slate-500">建議尺寸 256x256px，支援 JPG, PNG, WEBP</p>
                         </div>
                       </div>
-                      <div className="flex justify-end">
-                        <Button className="font-bold px-8">儲存變更</Button>
+
+                      <div className="grid sm:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">姓名</label>
+                          <input 
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all" 
+                            defaultValue={profile?.name} 
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">電子郵件 (不可修改)</label>
+                          <input 
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 font-bold outline-none" 
+                            defaultValue={profile?.email} 
+                            disabled 
+                          />
+                        </div>
+                        <div className="space-y-3 sm:col-span-2">
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">自我介紹</label>
+                          <textarea 
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 h-32 font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all resize-none" 
+                            placeholder="分享一些關於您的事情..." 
+                            defaultValue={profile?.bio} 
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end pt-4">
+                        <Button className="font-bold px-10 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20">
+                          儲存所有變更
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
-              </Tabs>
+                </div>
+              )}
             </div>
           </div>
         </div>

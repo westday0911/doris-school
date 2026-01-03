@@ -128,10 +128,10 @@ export default async function BlogPage() {
             {/* 右側：側邊欄 */}
             <aside className="space-y-10 sticky top-28">
               {/* 廣告區：最新課程推廣 */}
-              <div className="relative rounded-2xl bg-slate-950 p-6 overflow-hidden group">
+              <div className="relative rounded-xl bg-slate-950 p-6 overflow-hidden group border border-slate-800">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
                 <div className="relative z-10 space-y-4">
-                  <Badge className="bg-blue-600 border-0 text-[10px]">HOT COURSE</Badge>
+                  <Badge className="bg-blue-600 border-0 text-[10px] rounded-sm font-bold">HOT COURSE</Badge>
                   <h3 className="text-lg font-bold text-white leading-tight">
                     Vibe Coding <br />系統實戰課
                   </h3>
@@ -139,7 +139,7 @@ export default async function BlogPage() {
                     掌握 2025 最強開發範式，將想法瞬間轉化為高品質產品。
                   </p>
                   <Link href="/courses/vibe-coding" className="block w-full">
-                    <Button className="w-full bg-white text-slate-950 hover:bg-blue-50 text-xs font-black rounded-lg">
+                    <Button className="w-full bg-white text-slate-950 hover:bg-blue-50 text-xs font-black rounded-md">
                       立即搶位
                     </Button>
                   </Link>
