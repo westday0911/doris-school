@@ -53,7 +53,7 @@ export function BrowserMockup({ images, autoSlideInterval = 3000 }: BrowserMocku
               <img
                 src={image}
                 alt={`Slide ${index + 1}`}
-                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                className="w-full h-full object-cover hover:scale-105 transition-all duration-700"
               />
             </div>
           ))}
