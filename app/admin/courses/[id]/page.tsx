@@ -137,3 +137,4 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
   );
 }
 
+

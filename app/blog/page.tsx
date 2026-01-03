@@ -8,61 +8,40 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
-const articles = [
+// 這裡定義一個 Fallback 資料，以防資料庫尚未建立或連線失敗
+const fallbackArticles = [
   {
     title: "如何用 AI 做市場研究？",
     excerpt: "這篇文章將深入探討 3 個高效的提示詞框架，協助你在五分鐘內產出具備商業價值的市場洞察報告與競爭對手分析...",
     category: "實戰教學",
     tags: ["Prompt Engineering", "市場分析"],
     date: "2024-03-20",
-    image: "https://images.unsplash.com/photo-1485828333669-bd5ecd0a37b0?w=600&h=400&fit=crop&crop=center"
-  },
-  {
-    title: "建立你的 AI 學習路徑",
-    excerpt: "從零基礎到能獨立開發 AI 工作流，你需要掌握的核心能力圖譜。我們整理了 2024 年最值得投資的學習清單與資源...",
-    category: "學習指南",
-    tags: ["學習路徑", "心法"],
-    date: "2024-03-15",
-    image: "https://images.unsplash.com/photo-1451187580459-8049020e7369?w=600&h=400&fit=crop&crop=center"
-  },
-  {
-    title: "AI 專案落地的 5 個關鍵步驟",
-    excerpt: "為什麼 80% 的 AI 專案都停留在 Demo 階段？本文將揭秘企業級 AI 應用從概念驗證到真正推進生產流程的標準作業程序...",
-    category: "商業應用",
-    tags: ["專案管理", "企業導入"],
-    date: "2024-03-10",
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop&crop=center"
-  },
-  {
-    title: "Vibe Coding: 2025 年的開發新範式",
-    excerpt: "探討如何利用 AI 輔助工具進入高效的開發狀態，這種以「感官」與「節奏」為核心的編碼方式正在改變軟體業...",
-    category: "技術趨勢",
-    tags: ["Vibe Coding", "開發效能"],
-    date: "2024-03-05",
-    image: "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=600&h=400&fit=crop&crop=center"
-  },
-  {
-    title: "自動化工作流的設計藝術",
-    excerpt: "不僅僅是串接 API。好的自動化工作流需要考慮異常處理、資料清洗以及人類介入的最佳時機...",
-    category: "實戰教學",
-    tags: ["自動化", "工作流"],
-    date: "2024-03-01",
-    image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=600&h=400&fit=crop&crop=center"
+    image: "https://images.unsplash.com/photo-1485828333669-bd5ecd0a37b0?w=600&h=400&fit=crop&crop=center",
+    slug: "ai-market-research"
   }
 ];
 
-const categories = [
-  { name: "實戰教學", count: 12 },
-  { name: "學習指南", count: 8 },
-  { name: "商業應用", count: 15 },
-  { name: "技術趨勢", count: 6 },
-  { name: "心法分享", count: 10 }
-];
+export default async function BlogPage() {
+  // 從 Supabase 獲取文章
+  const { data: articlesFromDb, error } = await supabase
+    .from('articles')
+    .select('*')
+    .order('date', { ascending: false });
 
-const popularPosts = articles.slice(0, 3);
+  const articles = articlesFromDb || fallbackArticles;
 
-export default function BlogPage() {
+  const categories = [
+    { name: "實戰教學", count: 12 },
+    { name: "學習指南", count: 8 },
+    { name: "商業應用", count: 15 },
+    { name: "技術趨勢", count: 6 },
+    { name: "心法分享", count: 10 }
+  ];
+
+  const popularPosts = articles.slice(0, 3);
+
   return (
     <div className="relative bg-white min-h-screen">
       <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-50">
@@ -100,8 +79,8 @@ export default function BlogPage() {
             {/* 左側：文章列表 */}
             <div className="space-y-10">
               <div className="grid gap-8 sm:grid-cols-2">
-                {articles.map((article) => (
-                  <Card key={article.title} className="group overflow-hidden border-slate-200 rounded-lg hover:shadow-lg transition-all duration-300 flex flex-col h-full">
+                {articles.map((article: any) => (
+                  <Card key={article.slug} className="group overflow-hidden border-slate-200 rounded-lg hover:shadow-lg transition-all duration-300 flex flex-col h-full">
                     <div className="relative aspect-[16/9] overflow-hidden border-b border-slate-100">
                       <img
                         src={article.image}
@@ -118,24 +97,28 @@ export default function BlogPage() {
                       <div className="text-[10px] font-medium text-slate-400">
                         {article.date}
                       </div>
-                      <CardTitle className="text-xl font-bold text-slate-950 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2">
-                        {article.title}
-                      </CardTitle>
+                      <Link href={`/blog/${article.slug}`}>
+                        <CardTitle className="text-xl font-bold text-slate-950 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2">
+                          {article.title}
+                        </CardTitle>
+                      </Link>
                       <CardDescription className="text-slate-500 text-sm leading-relaxed line-clamp-3">
                         {article.excerpt}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="px-5 pb-5 mt-auto">
                       <div className="flex flex-wrap gap-1.5 mb-4">
-                        {article.tags.map(tag => (
+                        {article.tags?.map((tag: string) => (
                           <span key={tag} className="text-[10px] text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded-sm border border-slate-100">
                             #{tag}
                           </span>
                         ))}
                       </div>
-                      <Button variant="outline" className="w-full h-9 text-xs font-bold rounded-md hover:bg-slate-950 hover:text-white transition-all">
-                        閱讀更多
-                      </Button>
+                      <Link href={`/blog/${article.slug}`}>
+                        <Button variant="outline" className="w-full h-9 text-xs font-bold rounded-md hover:bg-slate-950 hover:text-white transition-all">
+                          閱讀更多
+                        </Button>
+                      </Link>
                     </CardContent>
                   </Card>
                 ))}
@@ -190,8 +173,8 @@ export default function BlogPage() {
                   熱門文章
                 </h3>
                 <div className="space-y-6">
-                  {popularPosts.map((post, idx) => (
-                    <Link key={post.title} href="#" className="flex gap-4 group">
+                  {popularPosts.map((post: any, idx) => (
+                    <Link key={post.title} href={`/blog/${post.slug}`} className="flex gap-4 group">
                       <div className="relative w-16 h-16 shrink-0 overflow-hidden rounded-lg">
                         <img 
                           src={post.image} 
@@ -238,8 +221,10 @@ export default function BlogPage() {
           </div>
           <div className="flex flex-wrap gap-8 text-sm font-medium text-slate-600">
             <Link href="/" className="hover:text-slate-950 transition-colors">首頁</Link>
+            <Link href="/courses" className="hover:text-slate-950 transition-colors">熱門課程</Link>
             <Link href="/blog" className="text-slate-950 font-bold">部落格</Link>
-            <a href="/#cta" className="hover:text-slate-950 transition-colors">聯絡我們</a>
+            <Link href="/tools" className="hover:text-slate-950 transition-colors">AI 工具</Link>
+            <Link href="/services/consulting" className="hover:text-slate-950 transition-colors">服務</Link>
           </div>
         </div>
       </footer>

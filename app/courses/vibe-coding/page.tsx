@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,10 +11,12 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import { Loader2, MessageSquare } from "lucide-react";
 
 const courseData = {
   title: "Vibe Coding 系統實戰課",
-  slug: "vibe-coding-實戰課",
+  slug: "vibe-coding",
   description: "掌握 2025 最強開發範式，將想法瞬間轉化為高品質產品。不僅是編碼，更是一種進入高效開發狀態的藝術。",
   longDescription: [
     "在 AI 時代，編碼的本質正在發生劇變。Vibe Coding 不僅僅是關於語法，更是關於如何與 AI 協作，進入一種近乎直覺的開發節奏（Flow State）。",
@@ -33,11 +38,6 @@ const courseData = {
     { title: "第三階段：全棧產品實戰開發", lessons: ["前端 UI 的感官驅動開發", "後端邏輯與 API 的自動化構建", "資料庫設計與 AI 優化"] },
     { title: "第四階段：部署、優化與維護", lessons: ["一鍵部署工作流", "AI 輔助的 Bug 修復與效能監控", "持續集成的現代化實踐"] }
   ],
-  reviews: [
-    { name: "張小明", date: "2024-12-20", rating: 5, content: "這門課徹底改變了我寫程式的方式，現在開發速度快了至少三倍！" },
-    { name: "王大同", date: "2024-12-15", rating: 5, content: "Doris 老師的講解非常清晰，尤其是關於如何與 AI 對話的部分，受益匪淺。" },
-    { name: "李小華", date: "2024-12-10", rating: 4, content: "內容非常紮實，如果是完全沒基礎的人可能需要多看幾遍試聽影片。" }
-  ],
   relatedCourses: [
     { title: "AI 自動化生產力", price: "NT$ 4,500", image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400&h=300&fit=crop" },
     { title: "生成式 AI 商業應用", price: "NT$ 6,900", image: "https://images.unsplash.com/photo-1485828333669-bd5ecd0a37b0?w=400&h=300&fit=crop" }
@@ -45,6 +45,44 @@ const courseData = {
 };
 
 export default function CourseDetailPage() {
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [courseId, setCourseId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchCourseAndReviews();
+  }, []);
+
+  const fetchCourseAndReviews = async () => {
+    setLoadingReviews(true);
+    // 1. 先根據 slug 找到課程 ID
+    const { data: course, error: courseError } = await supabase
+      .from('courses')
+      .select('id')
+      .eq('slug', courseData.slug)
+      .single();
+
+    if (courseError) {
+      console.error("Error fetching course:", courseError);
+    } else if (course) {
+      setCourseId(course.id);
+      // 2. 根據課程 ID 抓取已發佈的評論
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('target_id', course.id)
+        .eq('status', '已發佈')
+        .order('created_at', { ascending: false });
+
+      if (reviewsError) {
+        console.error("Error fetching reviews:", reviewsError);
+      } else {
+        setReviews(reviewsData || []);
+      }
+    }
+    setLoadingReviews(false);
+  };
+
   return (
     <div className="relative bg-white min-h-screen">
       {/* Navbar */}
@@ -82,7 +120,7 @@ export default function CourseDetailPage() {
               <div className="flex items-center gap-6 text-sm">
                 <div className="flex items-center gap-2">
                   <span className="text-yellow-400 font-bold">★ {courseData.rating}</span>
-                  <span className="text-slate-500">({courseData.reviewCount} 則評論)</span>
+                  <span className="text-slate-500">({reviews.length || courseData.reviewCount} 則評論)</span>
                 </div>
                 <div className="text-slate-500">
                   <span className="text-white font-bold">{courseData.studentCount}</span> 位學員已加入
@@ -165,20 +203,34 @@ export default function CourseDetailPage() {
             <div className="space-y-8">
               <h3 className="text-2xl font-bold text-slate-950">學員評論</h3>
               <div className="grid gap-6">
-                {courseData.reviews.map((rev, i) => (
-                  <div key={i} className="p-6 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-slate-900">{rev.name}</span>
-                      <span className="text-xs text-slate-400">{rev.date}</span>
-                    </div>
-                    <div className="flex text-yellow-400 text-xs">
-                      {"★".repeat(rev.rating)}
-                    </div>
-                    <p className="text-slate-600 text-sm leading-relaxed">
-                      {rev.content}
-                    </p>
+                {loadingReviews ? (
+                  <div className="flex items-center justify-center py-10 text-slate-400">
+                    <Loader2 className="animate-spin mr-2" /> 評論讀取中...
                   </div>
-                ))}
+                ) : reviews.length === 0 ? (
+                  <div className="p-10 text-center rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-slate-400">
+                    <MessageSquare className="mx-auto mb-2 opacity-20" size={32} />
+                    <p>目前尚無評論，成為第一個留下評論的人吧！</p>
+                  </div>
+                ) : (
+                  reviews.map((rev, i) => (
+                    <div key={rev.id} className="p-6 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-slate-900">{rev.user_name}</span>
+                        <span className="text-xs text-slate-400">
+                          {new Date(rev.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex text-yellow-400 text-xs">
+                        {"★".repeat(rev.rating)}
+                        <span className="text-slate-200">{"★".repeat(5 - rev.rating)}</span>
+                      </div>
+                      <p className="text-slate-600 text-sm leading-relaxed">
+                        {rev.content}
+                      </p>
+                    </div>
+                  ))
+                )}
               </div>
               <div className="pt-4">
                 <Button variant="outline" className="w-full py-6 rounded-xl font-bold">發表評論</Button>
@@ -286,4 +338,3 @@ export default function CourseDetailPage() {
     </div>
   );
 }
-

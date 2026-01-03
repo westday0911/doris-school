@@ -1,12 +1,18 @@
 import { Badge } from "@/components/ui/badge";
 import { Search, Download, Filter, ExternalLink } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
-export default function AdminOrdersPage() {
-  const orders = [
-    { id: "ORD-2024-001", member: "王小明", item: "Vibe Coding 系統實戰課", price: "8,800", method: "信用卡", status: "付款成功", date: "2024-01-03 14:30" },
-    { id: "ORD-2024-002", member: "李大同", item: "AI 自動化生產力", price: "4,500", method: "Line Pay", status: "等待付款", date: "2024-01-03 12:15" },
-    { id: "ORD-2024-003", member: "張曉華", item: "生成式 AI 商業應用", price: "6,900", method: "ATM 轉帳", status: "付款成功", date: "2024-01-02 18:45" },
-  ];
+export default async function AdminOrdersPage() {
+  // 從 Supabase 獲取訂單列表，並關聯 profiles 取得會員名稱
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select(`
+      *,
+      profiles:user_id (name)
+    `)
+    .order('created_at', { ascending: false });
+
+  const displayOrders = orders || [];
 
   return (
     <div className="space-y-6">
@@ -16,7 +22,7 @@ export default function AdminOrdersPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500/20" 
-              placeholder="搜尋訂單編號或會員..."
+              placeholder="搜尋訂單編號..."
             />
           </div>
           <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
@@ -41,27 +47,29 @@ export default function AdminOrdersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {orders.map((order) => (
+            {displayOrders.map((order: any) => (
               <tr key={order.id} className="hover:bg-slate-50/30 transition-colors">
-                <td className="px-6 py-4 text-sm font-mono font-bold text-slate-900">{order.id}</td>
+                <td className="px-6 py-4 text-sm font-mono font-bold text-slate-900">{order.order_number || order.id.substring(0, 12)}</td>
                 <td className="px-6 py-4">
                   <div className="space-y-0.5">
-                    <p className="text-sm font-bold text-slate-800">{order.member}</p>
-                    <p className="text-[11px] text-slate-400">{order.item}</p>
+                    <p className="text-sm font-bold text-slate-800">{order.profiles?.name || '未知會員'}</p>
+                    <p className="text-[11px] text-slate-400 line-clamp-1">{order.items_summary || '多項課程'}</p>
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="space-y-0.5">
-                    <p className="text-sm font-bold text-slate-800">NT$ {order.price}</p>
-                    <p className="text-[11px] text-slate-400">{order.method}</p>
+                    <p className="text-sm font-bold text-slate-800">NT$ {order.total_amount?.toLocaleString()}</p>
+                    <p className="text-[11px] text-slate-400">{order.payment_method}</p>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <Badge className={order.status === "付款成功" ? "bg-emerald-50 text-emerald-700 border-0" : "bg-amber-50 text-amber-700 border-0"}>
-                    {order.status}
+                  <Badge className={order.status === "paid" ? "bg-emerald-50 text-emerald-700 border-0" : "bg-amber-50 text-amber-700 border-0"}>
+                    {order.status === "paid" ? "付款成功" : "等待付款"}
                   </Badge>
                 </td>
-                <td className="px-6 py-4 text-sm text-slate-500 font-medium whitespace-nowrap">{order.date}</td>
+                <td className="px-6 py-4 text-sm text-slate-500 font-medium whitespace-nowrap">
+                  {new Date(order.created_at).toLocaleDateString()}
+                </td>
                 <td className="px-6 py-4 text-right">
                   <button className="p-2 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50">
                     <ExternalLink size={18} />
@@ -71,8 +79,12 @@ export default function AdminOrdersPage() {
             ))}
           </tbody>
         </table>
+        {displayOrders.length === 0 && (
+          <div className="text-center py-20 bg-white">
+            <p className="text-slate-400">目前尚無訂單資料。</p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
