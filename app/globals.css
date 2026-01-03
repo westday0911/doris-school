@@ -7,7 +7,7 @@
 }
 
 body {
-  @apply bg-gradient-to-br from-slate-50 via-blue-50/20 to-slate-100 text-slate-900;
+  @apply bg-white text-slate-950;
   background-attachment: fixed;
   position: relative;
 }
@@ -36,7 +36,7 @@ body {
   right: 8%;
   width: 180px;
   height: 180px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(30, 58, 138, 0.08));
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.05), rgba(100, 116, 139, 0.03));
   border-radius: 24px;
   transform: rotate(-12deg);
   animation: float 8s ease-in-out infinite;
@@ -49,7 +49,7 @@ body {
   left: 5%;
   width: 220px;
   height: 150px;
-  background: linear-gradient(135deg, rgba(17, 24, 39, 0.1), rgba(59, 130, 246, 0.06));
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.04), rgba(71, 85, 105, 0.02));
   border-radius: 28px;
   transform: rotate(18deg);
   animation: float 10s ease-in-out infinite reverse;
@@ -61,31 +61,45 @@ body {
   right: 15%;
   width: 140px;
   height: 140px;
-  background: linear-gradient(135deg, rgba(30, 58, 138, 0.1), rgba(17, 24, 39, 0.08));
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.03), rgba(30, 41, 59, 0.02));
   border-radius: 20px;
   transform: rotate(25deg);
   animation: float 7s ease-in-out infinite;
 }
 
 .section-spacing {
-  @apply py-16 sm:py-20 lg:py-24 relative;
+  @apply py-16 sm:py-20 lg:py-24 relative border-b border-slate-100;
 }
 
 .container-base {
   @apply mx-auto w-full max-w-6xl px-6 relative z-10;
 }
 
-/* AI科技感漸層文字 */
+/* 簡潔黑漸層文字 */
 .gradient-text {
-  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 50%, #0f172a 100%);
+  background: linear-gradient(135deg, #020617 0%, #1e293b 50%, #334155 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .gradient-text-blue {
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1e40af 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e3a8a 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Hero 光暈球效果 */
+.hero-glow {
+  background: radial-gradient(circle, rgba(148, 163, 184, 0.05) 0%, rgba(203, 213, 225, 0.02) 30%, transparent 70%);
+}
+
+/* 連接線動畫 */
+.connection-line {
+  filter: drop-shadow(0 0 3px rgba(148, 163, 184, 0.3));
+}
+
+.signal-pulse {
+  filter: drop-shadow(0 0 6px rgba(203, 213, 225, 0.5));
 }
