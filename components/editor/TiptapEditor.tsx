@@ -267,14 +267,18 @@ const MenuBar = ({ editor }: { editor: any }) => {
 export default function TiptapEditor({ content, onChange, placeholder }: TiptapEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      Underline,
-      Dropcursor.configure({
-        color: '#3b82f6',
-        width: 2,
+      StarterKit.configure({
+        dropcursor: {
+          color: '#3b82f6',
+          width: 2,
+        },
       }),
+      Underline,
       Link.configure({
         openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-blue-600 underline cursor-pointer',
+        },
       }),
       Image.configure({
         HTMLAttributes: {
@@ -305,9 +309,7 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
         if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
           const file = event.dataTransfer.files[0];
           if (file.type.startsWith('image/')) {
-            // 由於 uploadFile 在 MenuBar 中，我們需要一種方式呼叫它
-            // 這裡簡單處理：直接讀取檔案並上傳
-            uploadDroppedFile(file, view);
+            uploadDroppedFile(file, view, event);
             return true;
           }
         }
@@ -316,7 +318,7 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
     },
   });
 
-  const uploadDroppedFile = async (file: File, view: any) => {
+  const uploadDroppedFile = async (file: File, view: any, event: DragEvent) => {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
@@ -334,9 +336,16 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
 
       const { schema } = view.state;
       const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
-      const node = schema.nodes.image.create({ src: publicUrl });
-      const transaction = view.state.tr.insert(coordinates.pos, node);
-      view.dispatch(transaction);
+      
+      if (coordinates) {
+        const node = schema.nodes.image.create({ src: publicUrl });
+        const transaction = view.state.tr.insert(coordinates.pos, node);
+        view.dispatch(transaction);
+      } else {
+        const node = schema.nodes.image.create({ src: publicUrl });
+        const transaction = view.state.tr.insert(view.state.selection.from, node);
+        view.dispatch(transaction);
+      }
     } catch (error) {
       console.error('Drop upload error:', error);
     }

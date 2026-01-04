@@ -106,10 +106,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                 </div>
 
                 {/* Featured Image */}
-                <div className="aspect-[21/9] rounded-xl overflow-hidden shadow-xl border border-slate-100">
+                <div className="w-full rounded-xl overflow-hidden shadow-xl border border-slate-100 bg-slate-50">
                   <img 
                     src={article.image || "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=600&fit=crop"} 
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto max-h-[600px] object-contain mx-auto"
                     alt={article.title}
                   />
                 </div>
