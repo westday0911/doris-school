@@ -100,29 +100,31 @@ export default function ToolsPage() {
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
               {filteredTools.map((tool) => (
                 <Card key={tool.id} className="group overflow-hidden border-slate-200 rounded-xl hover:shadow-xl transition-all duration-500 flex flex-col">
-                  <div className="relative aspect-[16/10] overflow-hidden">
+                  <Link href={`/tools/${tool.slug}`} className="relative aspect-[16/10] overflow-hidden">
                     <img
                       src={tool.image_url || "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop"}
                       alt={tool.title}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute top-4 left-4">
-                      <Badge className="bg-black/80 backdrop-blur-md text-white border-0 text-[10px] px-3 py-1">
+                      <Badge className="bg-black/80 backdrop-blur-md text-white border-0 text-[10px] px-3 py-1 rounded-sm font-bold">
                         {tool.type}
                       </Badge>
                     </div>
-                  </div>
+                  </Link>
                   <CardHeader className="p-6 space-y-3">
-                    <CardTitle className="text-xl font-bold text-slate-950 group-hover:text-blue-600 transition-colors">
-                      {tool.title}
-                    </CardTitle>
-                    <CardDescription className="text-slate-500 text-sm leading-relaxed">
+                    <Link href={`/tools/${tool.slug}`}>
+                      <CardTitle className="text-xl font-bold text-slate-950 group-hover:text-blue-600 transition-colors">
+                        {tool.title}
+                      </CardTitle>
+                    </Link>
+                    <CardDescription className="text-slate-500 text-sm leading-relaxed line-clamp-2">
                       {tool.description}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="px-6 pb-8 mt-auto">
-                    <Button variant="outline" className="w-full rounded-lg font-bold hover:bg-slate-950 hover:text-white transition-all">
-                      立即試用
+                    <Button variant="outline" className="w-full rounded-lg font-bold hover:bg-slate-950 hover:text-white transition-all" asChild>
+                      <Link href={`/tools/${tool.slug}`}>查看詳情</Link>
                     </Button>
                   </CardContent>
                 </Card>

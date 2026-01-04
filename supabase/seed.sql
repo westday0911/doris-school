@@ -6,16 +6,17 @@ VALUES
 ON CONFLICT (slug) DO NOTHING;
 
 -- Seed tools
-INSERT INTO tools (title, description, type, image_url, access_count, status)
+INSERT INTO tools (title, slug, description, type, image_url, access_count, status, price, url, images, content, features)
 VALUES 
-('智能市場分析助理', '自動爬取競爭對手數據並生成週報的 AI 助理。', 'AI Agent', 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop', 542, '上架中'),
-('提示詞優化器', '將模糊的指令轉化為精確的結構化提示詞。', '小工具', 'https://images.unsplash.com/photo-1664575602554-20d7b9464b68?w=600&h=400&fit=crop', 1240, '上架中')
-ON CONFLICT DO NOTHING;
+('智能市場分析助理', 'ai-market-analyzer', '自動爬取競爭對手數據並生成週報的 AI 助理。', 'AI Agent', 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop', 542, '上架中', 0, 'https://example.com/analyzer', '{"https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop", "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop"}', '這是一個功能強大的 AI Market Analyzer Agent，能自動抓取競爭對手資訊並生成分析報告。', '{"自動數據抓取", "競爭對手分析", "週報自動生成"}'),
+('提示詞優化器', 'prompt-optimizer', '將模糊的指令轉化為精確的結構化提示詞。', '小工具', 'https://images.unsplash.com/photo-1664575602554-20d7b9464b68?w=600&h=400&fit=crop', 1240, '上架中', 99, null, '{"https://images.unsplash.com/photo-1664575602554-20d7b9464b68?w=600&h=400&fit=crop"}', '一組精心設計的小工具，幫助你快速生成、測試與優化 AI 提示詞。', '{"多種框架支援", "即時預覽", "一鍵複製"}')
+ON CONFLICT (slug) DO NOTHING;
 
 -- Seed courses
 INSERT INTO courses (title, slug, description, tag, level, duration, original_price, discount_price, image_url)
 VALUES 
 ('Vibe Coding 系統實戰課', 'vibe-coding', '掌握最新的 Vibe Coding 趨勢，打造具備極致體驗的現代化應用。', '進階課', '進階', '12 小時', 12800, 8800, 'https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=600&h=400&fit=crop')
 ON CONFLICT (slug) DO NOTHING;
+
 
 
