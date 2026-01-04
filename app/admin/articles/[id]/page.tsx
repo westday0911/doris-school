@@ -20,19 +20,31 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
     slug: "",
     content: "",
     excerpt: "",
-    category: "AI 實戰",
+    categories: [] as string[],
     status: "草稿",
     image: "",
     tags: [] as string[]
   });
 
   const [tagInput, setTagInput] = useState("");
+  const [categoryInput, setCategoryInput] = useState("");
+  const [existingCategories, setExistingCategories] = useState<string[]>([]);
 
   useEffect(() => {
+    fetchExistingCategories();
     if (!isNew) {
       fetchArticle();
     }
   }, [params.id]);
+
+  const fetchExistingCategories = async () => {
+    const { data } = await supabase.from('articles').select('categories');
+    if (data) {
+      const allCats = data.flatMap(item => item.categories || []);
+      const uniqueCats = Array.from(new Set(allCats)).filter(Boolean);
+      setExistingCategories(uniqueCats as string[]);
+    }
+  };
 
   const fetchArticle = async () => {
     setLoading(true);
@@ -52,7 +64,7 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
         slug: data.slug || "",
         content: data.content || "",
         excerpt: data.excerpt || "",
-        category: data.category || "AI 實戰",
+        categories: data.categories || (data.category ? [data.category] : []),
         status: data.status || "草稿",
         image: data.image || "",
         tags: data.tags || []
@@ -72,8 +84,11 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
     // 確保只傳送資料庫有的欄位，避免 schema 衝突
     const { ...submitData } = formData;
     
+    // 為了相容性，也更新舊的單一類別欄位 (取第一個類別)
+    const category = formData.categories.length > 0 ? formData.categories[0] : null;
+    
     console.log("正在儲存文章 ID:", params.id);
-    console.log("提交資料:", submitData);
+    console.log("提交資料:", { ...submitData, category });
 
     let error;
     let resultData;
@@ -83,6 +98,7 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
         .from('articles')
         .insert([{
           ...submitData,
+          category,
           date: new Date().toISOString().split('T')[0],
           updated_at: new Date().toISOString()
         }])
@@ -94,10 +110,11 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
         .from('articles')
         .update({
           ...submitData,
+          category,
           updated_at: new Date().toISOString()
         })
         .eq('id', params.id)
-        .select(); // 強制回傳更新後的資料
+        .select();
       error = updateError;
       resultData = data;
     }
@@ -127,6 +144,18 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
 
   const removeTag = (tagToRemove: string) => {
     setFormData({ ...formData, tags: formData.tags.filter(t => t !== tagToRemove) });
+  };
+
+  const addCategory = (cat?: string) => {
+    const newCat = cat || categoryInput;
+    if (newCat && !formData.categories.includes(newCat)) {
+      setFormData({ ...formData, categories: [...formData.categories, newCat] });
+      setCategoryInput("");
+    }
+  };
+
+  const removeCategory = (catToRemove: string) => {
+    setFormData({ ...formData, categories: formData.categories.filter(c => c !== catToRemove) });
   };
 
   if (loading) {
@@ -223,19 +252,43 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-bold text-slate-700 block">文章分類</label>
-              <select 
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white outline-none"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              >
-                <option>AI 實戰</option>
-                <option>趨勢分析</option>
-                <option>技術分享</option>
-                <option>專欄文章</option>
-                <option>實戰教學</option>
-                <option>技術趨勢</option>
-              </select>
+              <label className="text-sm font-bold text-slate-700 block">文章類別 (Categories)</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {formData.categories.map(cat => (
+                  <Badge key={cat} className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none gap-1">
+                    {cat} <span className="cursor-pointer hover:text-red-500" onClick={() => removeCategory(cat)}>×</span>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input 
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:ring-1 focus:ring-blue-500" 
+                  placeholder="新增類別..." 
+                  value={categoryInput}
+                  onChange={(e) => setCategoryInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCategory())}
+                />
+                <Button size="sm" variant="outline" onClick={() => addCategory()}>新增</Button>
+              </div>
+              {existingCategories.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">常用類別</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {existingCategories
+                      .filter(cat => !formData.categories.includes(cat))
+                      .slice(0, 10)
+                      .map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => addCategory(cat)}
+                          className="text-[10px] px-2 py-1 rounded bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors border border-slate-200"
+                        >
+                          + {cat}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-3">

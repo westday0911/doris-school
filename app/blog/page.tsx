@@ -23,24 +23,49 @@ const fallbackArticles = [
   }
 ];
 
-export default async function BlogPage() {
-  // 從 Supabase 獲取文章，排除狀態為「草稿」的文章
-  const { data: articlesFromDb, error } = await supabase
+export default async function BlogPage({
+  searchParams,
+}: {
+  searchParams: { category?: string };
+}) {
+  const selectedCategory = searchParams.category;
+
+  // 1. 獲取所有非草稿文章
+  let query = supabase
     .from('articles')
     .select('*')
     .neq('status', '草稿')
     .order('date', { ascending: false });
 
-  // 如果資料庫是空的或是回傳空陣列，才顯示 Fallback
-  const articles = (articlesFromDb && articlesFromDb.length > 0) ? articlesFromDb : fallbackArticles;
+  // 如果有選擇類別，進行篩選
+  if (selectedCategory) {
+    query = query.contains('categories', [selectedCategory]);
+  }
 
-  const categories = [
-    { name: "實戰教學", count: 12 },
-    { name: "學習指南", count: 8 },
-    { name: "商業應用", count: 15 },
-    { name: "技術趨勢", count: 6 },
-    { name: "心法分享", count: 10 }
-  ];
+  const { data: articlesFromDb } = await query;
+
+  // 2. 獲取所有現有的類別及其文章數量
+  const { data: allPublishedArticles } = await supabase
+    .from('articles')
+    .select('categories')
+    .neq('status', '草稿');
+
+  const categoryCounts: Record<string, number> = {};
+  if (allPublishedArticles) {
+    allPublishedArticles.forEach(article => {
+      const cats = article.categories || [];
+      cats.forEach((cat: string) => {
+        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+      });
+    });
+  }
+
+  const dynamicCategories = Object.entries(categoryCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // 如果資料庫是空的或是回傳空陣列，才顯示 Fallback
+  const articles = (articlesFromDb && articlesFromDb.length > 0) ? articlesFromDb : (selectedCategory ? [] : fallbackArticles);
 
   const popularPosts = articles.slice(0, 3);
 
@@ -73,8 +98,21 @@ export default async function BlogPage() {
           <div className="space-y-4 mb-16">
             <Badge variant="muted">資源中心</Badge>
             <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-950">
-              最新 AI <span className="text-blue-600">觀點與實踐</span>
+              {selectedCategory ? (
+                <>
+                  <span className="text-blue-600">{selectedCategory}</span> 相關文章
+                </>
+              ) : (
+                <>
+                  最新 AI <span className="text-blue-600">觀點與實踐</span>
+                </>
+              )}
             </h1>
+            {selectedCategory && (
+              <Link href="/blog" className="inline-block text-sm text-slate-500 hover:text-slate-950 transition-colors">
+                ← 顯示所有文章
+              </Link>
+            )}
           </div>
 
           <div className="grid lg:grid-cols-[1fr_320px] gap-12 items-start">
@@ -89,10 +127,18 @@ export default async function BlogPage() {
                         alt={article.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
-                      <div className="absolute top-3 left-3">
-                        <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-slate-200 text-[10px] px-2 py-0.5 rounded-sm font-bold">
-                          {article.category}
-                        </Badge>
+                      <div className="absolute top-3 left-3 flex flex-wrap gap-1">
+                        {(article.categories && article.categories.length > 0) ? (
+                          article.categories.map((cat: string) => (
+                            <Badge key={cat} className="bg-white/90 backdrop-blur-md text-slate-900 border-slate-200 text-[10px] px-2 py-0.5 rounded-sm font-bold shadow-sm">
+                              {cat}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-slate-200 text-[10px] px-2 py-0.5 rounded-sm font-bold shadow-sm">
+                            {article.category || "AI 實戰"}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <CardHeader className="p-5 space-y-3">
@@ -155,14 +201,20 @@ export default async function BlogPage() {
                   文章類別
                 </h3>
                 <div className="flex flex-col gap-1">
-                  {categories.map((cat) => (
+                  <Link 
+                    href="/blog" 
+                    className={`flex items-center justify-between p-2 rounded-lg transition-colors group ${!selectedCategory ? 'bg-slate-100 text-slate-950' : 'hover:bg-slate-50'}`}
+                  >
+                    <span className={`text-sm font-medium ${!selectedCategory ? 'text-slate-950' : 'text-slate-600 group-hover:text-slate-950'}`}>全部文章</span>
+                  </Link>
+                  {dynamicCategories.map((cat) => (
                     <Link 
                       key={cat.name} 
-                      href="#" 
-                      className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors group"
+                      href={`/blog?category=${encodeURIComponent(cat.name)}`} 
+                      className={`flex items-center justify-between p-2 rounded-lg transition-colors group ${selectedCategory === cat.name ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50'}`}
                     >
-                      <span className="text-sm text-slate-600 group-hover:text-slate-950 font-medium">{cat.name}</span>
-                      <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{cat.count}</span>
+                      <span className={`text-sm font-medium ${selectedCategory === cat.name ? 'text-blue-700' : 'text-slate-600 group-hover:text-slate-950'}`}>{cat.name}</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${selectedCategory === cat.name ? 'bg-blue-100 text-blue-700' : 'text-slate-400 bg-slate-100'}`}>{cat.count}</span>
                     </Link>
                   ))}
                 </div>

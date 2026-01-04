@@ -40,10 +40,26 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   const articles = allArticles || [];
   
-  // 推薦文章：同分類的其他文章，若不夠則補最新文章
+  // 動態計算類別
+  const categoryCounts: Record<string, number> = {};
+  articles.forEach(a => {
+    const cats = a.categories || [];
+    cats.forEach((cat: string) => {
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    });
+  });
+  const dynamicCategories = Object.entries(categoryCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // 推薦文章：有共同類別的文章，若不夠則補最新文章
+  const currentCats = article.categories || [];
   const recommendedArticles = articles
     .filter(a => a.slug !== params.slug)
-    .filter(a => a.category === article.category)
+    .filter(a => {
+      const aCats = a.categories || [];
+      return currentCats.some(cat => aCats.includes(cat));
+    })
     .slice(0, 3);
   
   if (recommendedArticles.length < 3) {
@@ -54,13 +70,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   }
 
   const popularPosts = articles.slice(0, 3);
-  const categories = [
-    { name: "實戰教學", count: articles.filter(a => a.category === "實戰教學").length || 12 },
-    { name: "學習指南", count: articles.filter(a => a.category === "學習指南").length || 8 },
-    { name: "商業應用", count: articles.filter(a => a.category === "商業應用").length || 15 },
-    { name: "技術趨勢", count: articles.filter(a => a.category === "技術趨勢").length || 6 },
-    { name: "心法分享", count: articles.filter(a => a.category === "心法分享").length || 10 }
-  ];
 
   return (
     <div className="relative bg-white min-h-screen">
@@ -81,7 +90,13 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                 {/* Header */}
                 <div className="space-y-6">
                   <div className="flex flex-wrap gap-2">
-                    <Badge className="bg-blue-600 border-0 rounded-sm font-bold">{article.category || "AI 實戰"}</Badge>
+                    {article.categories && article.categories.length > 0 ? (
+                      article.categories.map((cat: string) => (
+                        <Badge key={cat} className="bg-blue-600 border-0 rounded-sm font-bold">{cat}</Badge>
+                      ))
+                    ) : (
+                      <Badge className="bg-blue-600 border-0 rounded-sm font-bold">{article.category || "AI 實戰"}</Badge>
+                    )}
                     {article.tags?.map((tag: string) => (
                       <Badge key={tag} variant="muted" className="rounded-sm">#{tag}</Badge>
                     ))}
@@ -183,10 +198,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   文章類別
                 </h3>
                 <div className="flex flex-col gap-1">
-                  {categories.map((cat) => (
+                  {dynamicCategories.map((cat) => (
                     <Link 
                       key={cat.name} 
-                      href="#" 
+                      href={`/blog?category=${encodeURIComponent(cat.name)}`} 
                       className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors group"
                     >
                       <span className="text-sm text-slate-600 group-hover:text-slate-950 font-medium">{cat.name}</span>
