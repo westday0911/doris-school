@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@/components/ui/badge"; // 這裡應該是 ui/button，修正一下
-import { Button as ShdnButton } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
   DropdownMenu,
@@ -41,9 +40,9 @@ export function Navbar() {
               {user ? (
                 <div className="flex items-center gap-4">
                   <Link href="/member/dashboard" className="hidden sm:block">
-                    <ShdnButton variant="ghost" size="sm" className="gap-2 font-bold">
+                    <Button variant="ghost" size="sm" className="gap-2 font-bold">
                       <LayoutDashboard size={16} /> 會員中心
-                    </ShdnButton>
+                    </Button>
                   </Link>
                   <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-white text-xs font-bold overflow-hidden border border-slate-200">
@@ -56,9 +55,9 @@ export function Navbar() {
                     <span className="text-sm font-bold hidden md:inline-block text-slate-700">
                       {profile?.name || user.email?.split("@")[0]}
                     </span>
-                    <ShdnButton variant="ghost" size="icon" onClick={() => signOut()} title="登出">
+                    <Button variant="ghost" size="icon" onClick={() => signOut()} title="登出">
                       <LogOut size={16} className="text-slate-400 hover:text-red-500" />
-                    </ShdnButton>
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -66,9 +65,9 @@ export function Navbar() {
                   <Link href="/auth/login" className="hidden text-sm font-medium text-slate-600 hover:text-slate-950 sm:block">
                     登入
                   </Link>
-                  <ShdnButton size="sm" asChild>
+                  <Button size="sm" asChild>
                     <Link href="/auth/register">立即加入</Link>
-                  </ShdnButton>
+                  </Button>
                 </>
               )}
             </>

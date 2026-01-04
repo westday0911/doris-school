@@ -7,6 +7,7 @@ import { ChevronLeft, Save, Eye, Image as ImageIcon, Tag, Loader2 } from "lucide
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import TiptapEditor from "@/components/editor/TiptapEditor";
 
 export default function AdminArticleEditPage({ params }: { params: { id: string } }) {
   const isNew = params.id === "new";
@@ -68,28 +69,48 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
 
     setSaving(true);
     
-    const articleData = {
-      ...formData,
-      date: new Date().toISOString().split('T')[0]
-    };
+    // 確保只傳送資料庫有的欄位，避免 schema 衝突
+    const { ...submitData } = formData;
+    
+    console.log("正在儲存文章 ID:", params.id);
+    console.log("提交資料:", submitData);
 
     let error;
+    let resultData;
+
     if (isNew) {
-      const { error: insertError } = await supabase
+      const { data, error: insertError } = await supabase
         .from('articles')
-        .insert([articleData]);
+        .insert([{
+          ...submitData,
+          date: new Date().toISOString().split('T')[0],
+          updated_at: new Date().toISOString()
+        }])
+        .select();
       error = insertError;
+      resultData = data;
     } else {
-      const { error: updateError } = await supabase
+      const { data, error: updateError } = await supabase
         .from('articles')
-        .update(articleData)
-        .eq('id', params.id);
+        .update({
+          ...submitData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', params.id)
+        .select(); // 強制回傳更新後的資料
       error = updateError;
+      resultData = data;
     }
 
     if (error) {
+      console.error("Supabase Error:", error);
       alert("儲存失敗：" + error.message);
+    } else if (!resultData || resultData.length === 0) {
+      // 這是最關鍵的檢查：如果回傳資料為空，代表根本沒更新到
+      console.warn("No rows updated. Check if the ID is correct.");
+      alert("儲存失敗：找不到對應的文章紀錄，請嘗試重新整理頁面。");
     } else {
+      console.log("儲存成功，回傳資料:", resultData);
       alert(isNew ? "文章已建立" : "變更已儲存");
       router.push("/admin/articles");
       router.refresh();
@@ -177,14 +198,12 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
             <div className="flex items-center justify-between">
               <label className="text-sm font-bold text-slate-700">內容編輯</label>
               <div className="flex gap-2 text-xs text-slate-400">
-                <span>Markdown 支援</span>
+                <span>Rich Text Editor</span>
               </div>
             </div>
-            <textarea 
-              className="w-full px-4 py-4 rounded-xl border border-slate-200 min-h-[500px] outline-none focus:ring-2 focus:ring-blue-500/20 font-mono text-sm leading-relaxed" 
-              placeholder="開始撰寫您的內容..."
-              value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+            <TiptapEditor 
+              content={formData.content} 
+              onChange={(content) => setFormData({ ...formData, content })} 
             />
           </div>
         </div>

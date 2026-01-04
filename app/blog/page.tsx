@@ -24,13 +24,15 @@ const fallbackArticles = [
 ];
 
 export default async function BlogPage() {
-  // 從 Supabase 獲取文章
+  // 從 Supabase 獲取文章，排除狀態為「草稿」的文章
   const { data: articlesFromDb, error } = await supabase
     .from('articles')
     .select('*')
+    .neq('status', '草稿')
     .order('date', { ascending: false });
 
-  const articles = articlesFromDb || fallbackArticles;
+  // 如果資料庫是空的或是回傳空陣列，才顯示 Fallback
+  const articles = (articlesFromDb && articlesFromDb.length > 0) ? articlesFromDb : fallbackArticles;
 
   const categories = [
     { name: "實戰教學", count: 12 },

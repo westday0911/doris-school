@@ -146,9 +146,10 @@ export default function CourseDetailPage({ params }: { params: { slug: string } 
             {/* Course Introduction */}
             <div className="space-y-6">
               <h3 className="text-2xl font-bold text-slate-950">課程介紹</h3>
-              <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed text-lg">
-                {course.content || course.description}
-              </div>
+              <div 
+                className="prose prose-slate max-w-none"
+                dangerouslySetInnerHTML={{ __html: course.content || course.description }}
+              />
             </div>
 
             {/* Course Syllabus */}

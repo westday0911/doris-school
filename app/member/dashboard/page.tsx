@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,7 @@ import {
   CardTitle,
   CardContent,
 } from "@/components/ui/card";
-import { BookOpen, CreditCard, User, LogOut, Loader2, ChevronRight, Settings } from "lucide-react";
+import { BookOpen, CreditCard, User, LogOut, Loader2, ChevronRight, Settings, Camera, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/Navbar";
@@ -19,17 +19,35 @@ import { useAuth } from "@/components/providers/auth-provider";
 type DashboardSection = "courses" | "orders" | "profile";
 
 export default function MemberDashboard() {
-  const { user, profile, loading: authLoading, signOut } = useAuth();
+  const { user, profile, loading: authLoading, signOut, refreshProfile } = useAuth();
   const [activeSection, setActiveSection] = useState<DashboardSection>("courses");
   const [orders, setOrders] = useState<any[]>([]);
   const [userCourses, setUserCourses] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+
+  // Profile Form State
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    bio: ""
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
       fetchDashboardData();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        name: profile.name || "",
+        bio: profile.bio || ""
+      });
+    }
+  }, [profile]);
 
   const fetchDashboardData = async () => {
     setLoadingData(true);
@@ -56,6 +74,111 @@ export default function MemberDashboard() {
     if (!coursesRes.error) setUserCourses(coursesRes.data || []);
     
     setLoadingData(false);
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        name: formData.name,
+        bio: formData.bio
+      })
+      .eq('id', user.id);
+
+    if (error) {
+      alert("儲存失敗：" + error.message);
+    } else {
+      alert("個人資料已更新！");
+      if (refreshProfile) await refreshProfile();
+    }
+    setIsSaving(false);
+  };
+
+  const compressImage = (file: File, maxWidth: number): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = (maxWidth / width) * height;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error("Canvas to Blob failed"));
+          }, 'image/jpeg', 0.8);
+        };
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // 檢查文件類型
+    if (!file.type.startsWith('image/')) {
+      alert("請選擇圖片檔案");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      // 1. 壓縮圖片 (最大寬度 500px)
+      const compressedBlob = await compressImage(file, 500);
+      
+      // 2. 上傳到 Supabase Storage
+      // 確保 bucket 'avatars' 已存在且為公開
+      const fileExt = 'jpg';
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, compressedBlob, {
+          contentType: 'image/jpeg',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // 3. 獲取公開 URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // 4. 更新 Profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      if (refreshProfile) await refreshProfile();
+      alert("大頭照更新成功！");
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      alert("上傳失敗：" + error.message);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -86,11 +209,16 @@ export default function MemberDashboard() {
             {/* Sidebar */}
             <aside className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm sticky top-24">
               <div className="flex flex-col items-center text-center pb-8 border-b border-slate-100 mb-6">
-                <div className="h-20 w-20 rounded-full bg-slate-900 flex items-center justify-center text-white text-2xl font-bold border-4 border-white shadow-xl overflow-hidden mb-4">
+                <div className="h-20 w-20 rounded-full bg-slate-900 flex items-center justify-center text-white text-2xl font-bold border-4 border-white shadow-xl overflow-hidden mb-4 relative group">
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} className="w-full h-full object-cover" />
                   ) : (
-                    profile?.name?.[0]?.toUpperCase()
+                    profile?.name?.[0]?.toUpperCase() || user.email?.[0].toUpperCase()
+                  )}
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Loader2 className="animate-spin text-white" size={20} />
+                    </div>
                   )}
                 </div>
                 <h2 className="font-bold text-lg text-slate-950">{profile?.name || user.email?.split('@')[0]}</h2>
@@ -281,21 +409,36 @@ export default function MemberDashboard() {
                     </CardHeader>
                     <CardContent className="p-8 space-y-8">
                       <div className="flex items-center gap-8 mb-8">
-                        <div className="relative group">
-                          <div className="h-24 w-24 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 text-2xl font-bold border-4 border-white shadow-lg overflow-hidden">
+                        <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                          <div className="h-24 w-24 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 text-2xl font-bold border-4 border-white shadow-lg overflow-hidden relative">
                             {profile?.avatar_url ? (
                               <img src={profile.avatar_url} className="w-full h-full object-cover" />
                             ) : (
-                              profile?.name?.[0]?.toUpperCase()
+                              profile?.name?.[0]?.toUpperCase() || user.email?.[0].toUpperCase()
                             )}
+                            {isUploading && (
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <Loader2 className="animate-spin text-white" size={24} />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Camera className="text-white" size={24} />
+                            </div>
                           </div>
-                          <button className="absolute bottom-0 right-0 p-2 bg-slate-950 text-white rounded-full shadow-lg hover:scale-110 transition-all border-2 border-white">
+                          <div className="absolute bottom-0 right-0 p-2 bg-slate-950 text-white rounded-full shadow-lg border-2 border-white">
                             <Settings size={14} />
-                          </button>
+                          </div>
+                          <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            accept="image/*"
+                            onChange={handleAvatarUpload}
+                          />
                         </div>
                         <div className="space-y-1">
                           <p className="text-sm font-bold text-slate-900">大頭照</p>
-                          <p className="text-xs text-slate-500">建議尺寸 256x256px，支援 JPG, PNG, WEBP</p>
+                          <p className="text-xs text-slate-500">建議尺寸 256x256px，系統會自動壓縮。支援 JPG, PNG, WEBP</p>
                         </div>
                       </div>
 
@@ -304,7 +447,8 @@ export default function MemberDashboard() {
                           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">姓名</label>
                           <input 
                             className="w-full px-4 py-3 rounded-xl border border-slate-200 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all" 
-                            defaultValue={profile?.name} 
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                           />
                         </div>
                         <div className="space-y-3">
@@ -320,13 +464,20 @@ export default function MemberDashboard() {
                           <textarea 
                             className="w-full px-4 py-3 rounded-xl border border-slate-200 h-32 font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all resize-none" 
                             placeholder="分享一些關於您的事情..." 
-                            defaultValue={profile?.bio} 
+                            value={formData.bio}
+                            onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                           />
                         </div>
                       </div>
                       <div className="flex justify-end pt-4">
-                        <Button className="font-bold px-10 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20">
-                          儲存所有變更
+                        <Button 
+                          className="font-bold px-10 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20"
+                          onClick={handleUpdateProfile}
+                          disabled={isSaving}
+                        >
+                          {isSaving ? (
+                            <><Loader2 className="animate-spin mr-2" size={18} /> 儲存中...</>
+                          ) : "儲存所有變更"}
                         </Button>
                       </div>
                     </CardContent>

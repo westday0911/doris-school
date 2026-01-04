@@ -13,21 +13,29 @@ import { notFound } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  // 1. 從 Supabase 獲取單篇文章
-  const { data: article } = await supabase
+  console.log("Fetching article with slug:", params.slug);
+  // 1. 從 Supabase 獲取單篇文章，支援舊文章 (status 為 NULL)
+  const { data: article, error: fetchError } = await supabase
     .from('articles')
     .select('*')
     .eq('slug', params.slug)
+    .or('status.is.null,status.neq.草稿')
     .single();
 
+  if (fetchError) {
+    console.error("Supabase fetch error for slug", params.slug, ":", fetchError);
+  }
+
   if (!article) {
+    console.warn("Article not found or is draft for slug:", params.slug);
     notFound();
   }
 
-  // 2. 獲取所有文章用於側邊欄和推薦
+  // 2. 獲取所有非草稿文章用於側邊欄和推薦
   const { data: allArticles } = await supabase
     .from('articles')
     .select('*')
+    .neq('status', '草稿')
     .order('date', { ascending: false });
 
   const articles = allArticles || [];
@@ -108,7 +116,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
                 {/* Content */}
                 <div 
-                  className="prose prose-slate lg:prose-lg max-w-none prose-headings:font-black prose-headings:text-slate-950 prose-p:text-slate-600 prose-p:leading-relaxed prose-strong:text-slate-950 prose-a:text-blue-600 prose-img:rounded-lg"
+                  className="prose prose-slate max-w-none prose-headings:font-black prose-headings:text-slate-950 prose-p:text-slate-600 prose-p:leading-relaxed prose-strong:text-slate-950 prose-a:text-blue-600 prose-img:rounded-lg"
                   dangerouslySetInnerHTML={{ __html: article.content || "" }}
                 />
               </article>
