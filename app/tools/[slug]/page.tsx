@@ -11,6 +11,39 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
+import { Metadata, ResolvingMetadata } from 'next';
+
+type Props = {
+  params: { slug: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+
+export async function generateMetadata(
+  { params }: Props,
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  const { data: tool } = await supabase
+    .from('tools')
+    .select('title, description, image_url, type')
+    .eq('slug', params.slug)
+    .single();
+
+  if (!tool) return {};
+
+  const previousImages = (await parent).openGraph?.images || [];
+
+  return {
+    title: `${tool.title} - AI 工具`,
+    description: tool.description,
+    openGraph: {
+      title: `${tool.title} | Doris AI學院`,
+      description: tool.description,
+      url: `https://doris-ai-academy.com/tools/${params.slug}`,
+      images: [tool.image_url, ...previousImages],
+      type: 'website',
+    },
+  };
+}
 
 export default async function ToolDetailPage({ params }: { params: { slug: string } }) {
   // 1. 從 Supabase 獲取單個工具
@@ -33,8 +66,59 @@ export default async function ToolDetailPage({ params }: { params: { slug: strin
 
   const images = tool.images && tool.images.length > 0 ? tool.images : [tool.image_url];
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: tool.title,
+    description: tool.description,
+    image: images,
+    brand: {
+      '@type': 'Brand',
+      name: 'Doris AI學院',
+    },
+    offers: {
+      '@type': 'Offer',
+      price: tool.price,
+      priceCurrency: 'TWD',
+      availability: 'https://schema.org/InStock',
+    },
+  };
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: '首頁',
+        item: 'https://doris-ai-academy.com',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'AI 工具庫',
+        item: 'https://doris-ai-academy.com/tools',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: tool.title,
+        item: `https://doris-ai-academy.com/tools/${params.slug}`,
+      },
+    ],
+  };
+
   return (
     <div className="relative bg-white min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <Navbar />
 
       <main className="py-12 sm:py-20">

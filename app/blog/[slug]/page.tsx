@@ -11,6 +11,39 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
+import { Metadata, ResolvingMetadata } from 'next';
+
+type Props = {
+  params: { slug: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+
+export async function generateMetadata(
+  { params }: Props,
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  const { data: article } = await supabase
+    .from('articles')
+    .select('title, excerpt, image, category')
+    .eq('slug', params.slug)
+    .single();
+
+  if (!article) return {};
+
+  const previousImages = (await parent).openGraph?.images || [];
+
+  return {
+    title: article.title,
+    description: article.excerpt || `閱讀更多關於 ${article.title} 的詳細內容。`,
+    openGraph: {
+      title: article.title,
+      description: article.excerpt,
+      url: `https://doris-ai-academy.com/blog/${params.slug}`,
+      images: [article.image, ...previousImages],
+      type: 'article',
+    },
+  };
+}
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
   console.log("Fetching article with slug:", params.slug);
@@ -71,8 +104,64 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   const popularPosts = articles.slice(0, 3);
 
+  // JSON-LD Schema
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: article.title,
+    image: article.image,
+    datePublished: article.date,
+    dateModified: article.updated_at || article.date,
+    author: {
+      '@type': 'Person',
+      name: 'Doris',
+    },
+    description: article.excerpt,
+    publisher: {
+      '@type': 'Organization',
+      name: 'Doris AI學院',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://doris-ai-academy.com/logo.png',
+      },
+    },
+  };
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: '首頁',
+        item: 'https://doris-ai-academy.com',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: '部落格',
+        item: 'https://doris-ai-academy.com/blog',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: article.title,
+        item: `https://doris-ai-academy.com/blog/${params.slug}`,
+      },
+    ],
+  };
+
   return (
     <div className="relative bg-white min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <Navbar />
 
       <main className="py-12 sm:py-20">
