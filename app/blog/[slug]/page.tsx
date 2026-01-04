@@ -22,10 +22,11 @@ export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
+  const decodedSlug = decodeURIComponent(params.slug);
   const { data: article } = await supabase
     .from('articles')
     .select('title, excerpt, image, category')
-    .eq('slug', params.slug)
+    .eq('slug', decodedSlug)
     .single();
 
   if (!article) return {};
@@ -46,25 +47,58 @@ export async function generateMetadata(
 }
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  console.log("Fetching article with slug:", params.slug);
-  // 1. 從 Supabase 獲取單篇文章，支援舊文章 (status 為 NULL)
-  const { data: article, error: fetchError } = await supabase
+  const decodedSlug = decodeURIComponent(params.slug);
+  const lowerEncodedSlug = params.slug.toLowerCase();
+  
+  console.log("--- Debug Slug Start ---");
+  console.log("Original slug param:", params.slug);
+  console.log("Decoded slug:", decodedSlug);
+  console.log("Lower encoded slug:", lowerEncodedSlug);
+  
+  // 1. 嘗試多種匹配方式：解碼後的中文、原始參數、或是轉小寫後的編碼
+  const { data: articlesFound, error: fetchError } = await supabase
     .from('articles')
     .select('*')
-    .eq('slug', params.slug)
-    .or('status.is.null,status.neq.草稿')
-    .single();
+    .in('slug', [decodedSlug, params.slug, lowerEncodedSlug])
+    .limit(1);
 
-  if (fetchError) {
-    console.error("Supabase fetch error for slug", params.slug, ":", fetchError);
+  const article = articlesFound && articlesFound.length > 0 ? articlesFound[0] : null;
+
+  // 2. 如果還是找不到，才嘗試模糊匹配
+  let finalArticle = article;
+  if (!finalArticle) {
+    console.log("Exact matches failed, trying fuzzy match...");
+    const { data: fuzzyArticles } = await supabase
+      .from('articles')
+      .select('*')
+      .ilike('slug', `%${decodedSlug.slice(0, 5)}%`)
+      .neq('status', '草稿');
+    
+    if (fuzzyArticles && fuzzyArticles.length > 0) {
+      console.log("Found possible matches:", fuzzyArticles.map(a => a.slug));
+      finalArticle = fuzzyArticles.find(a => 
+        a.slug.toLowerCase() === lowerEncodedSlug || 
+        a.slug === decodedSlug ||
+        decodeURIComponent(a.slug) === decodedSlug
+      );
+      if (finalArticle) console.log("Fuzzy match successful!");
+    }
   }
 
-  if (!article) {
-    console.warn("Article not found or is draft for slug:", params.slug);
+  if (fetchError && !finalArticle) {
+    console.error("Supabase fetch error:", fetchError);
+  }
+
+  if (!finalArticle) {
+    console.warn("Article not found for slug:", decodedSlug);
     notFound();
   }
 
-  // 2. 獲取所有非草稿文章用於側邊欄和推薦
+  return BlogPostContent(finalArticle, params.slug);
+}
+
+async function BlogPostContent(article: any, slugParam: string) {
+  // 獲取所有非草稿文章用於側邊欄和推薦
   const { data: allArticles } = await supabase
     .from('articles')
     .select('*')
@@ -88,7 +122,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   // 推薦文章：有共同類別的文章，若不夠則補最新文章
   const currentCats = article.categories || [];
   const recommendedArticles = articles
-    .filter(a => a.slug !== params.slug)
+    .filter(a => a.slug !== article.slug)
     .filter(a => {
       const aCats = a.categories || [];
       return currentCats.some(cat => aCats.includes(cat));
@@ -97,7 +131,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   
   if (recommendedArticles.length < 3) {
     const additional = articles
-      .filter(a => a.slug !== params.slug && !recommendedArticles.find(r => r.slug === a.slug))
+      .filter(a => a.slug !== article.slug && !recommendedArticles.find(r => r.slug === a.slug))
       .slice(0, 3 - recommendedArticles.length);
     recommendedArticles.push(...additional);
   }
@@ -147,7 +181,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         '@type': 'ListItem',
         position: 3,
         name: article.title,
-        item: `https://doris-ai-academy.com/blog/${params.slug}`,
+        item: `https://doris-ai-academy.com/blog/${slugParam}`,
       },
     ],
   };

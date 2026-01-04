@@ -11,10 +11,11 @@ export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
+  const decodedSlug = decodeURIComponent(params.slug);
   const { data: course } = await supabase
     .from('courses')
     .select('title, description, image_url, tag')
-    .eq('slug', params.slug)
+    .eq('slug', decodedSlug)
     .single();
 
   if (!course) return {};
@@ -35,13 +36,14 @@ export async function generateMetadata(
 }
 
 export default async function CourseDetailPage({ params }: { params: { slug: string } }) {
+  const decodedSlug = decodeURIComponent(params.slug);
   const { data: course } = await supabase
     .from('courses')
     .select('*')
-    .eq('slug', params.slug)
+    .eq('slug', decodedSlug)
     .single();
 
-  if (!course) return <CourseDetailClient initialCourse={null} slug={params.slug} />;
+  if (!course) return <CourseDetailClient initialCourse={null} slug={decodedSlug} />;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -97,7 +99,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
-      <CourseDetailClient initialCourse={course} slug={params.slug} />
+      <CourseDetailClient initialCourse={course} slug={decodedSlug} />
     </>
   );
 }

@@ -22,10 +22,11 @@ export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
+  const decodedSlug = decodeURIComponent(params.slug);
   const { data: tool } = await supabase
     .from('tools')
     .select('title, description, image_url, type')
-    .eq('slug', params.slug)
+    .eq('slug', decodedSlug)
     .single();
 
   if (!tool) return {};
@@ -46,11 +47,12 @@ export async function generateMetadata(
 }
 
 export default async function ToolDetailPage({ params }: { params: { slug: string } }) {
+  const decodedSlug = decodeURIComponent(params.slug);
   // 1. 從 Supabase 獲取單個工具
   const { data: tool } = await supabase
     .from('tools')
     .select('*')
-    .eq('slug', params.slug)
+    .eq('slug', decodedSlug)
     .single();
 
   if (!tool) {
@@ -61,7 +63,7 @@ export default async function ToolDetailPage({ params }: { params: { slug: strin
   const { data: otherTools } = await supabase
     .from('tools')
     .select('*')
-    .neq('slug', params.slug)
+    .neq('slug', decodedSlug)
     .limit(3);
 
   const images = tool.images && tool.images.length > 0 ? tool.images : [tool.image_url];

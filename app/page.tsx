@@ -1,6 +1,9 @@
+/**
+ * Server Component
+ */
 import { supabase } from "@/lib/supabase";
-import HomeClient from "@/components/home/HomeClient";
 import { Metadata } from "next";
+import HomeClient from "@/components/home/HomeClient";
 
 export const metadata: Metadata = {
   title: "首頁 | Doris AI學院 - 把想法變成跑得動的產品",
@@ -8,13 +11,8 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [coursesRes, articlesRes] = await Promise.all([
-    supabase.from('courses').select('*').limit(3),
-    supabase.from('articles').select('*').neq('status', '草稿').order('date', { ascending: false }).limit(3)
-  ]);
+  const { data: courses } = await supabase.from('courses').select('*').limit(3);
+  const { data: articles } = await supabase.from('articles').select('*').neq('status', '草稿').order('date', { ascending: false }).limit(3);
 
-  const courses = coursesRes.data || [];
-  const articles = articlesRes.data || [];
-
-  return <HomeClient initialCourses={courses} initialArticles={articles} />;
+  return <HomeClient initialCourses={courses || []} initialArticles={articles || []} />;
 }

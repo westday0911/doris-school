@@ -9,8 +9,13 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { Metadata } from "next";
 
-// 這裡定義一個 Fallback 資料，以防資料庫尚未建立或連線失敗
+export const metadata: Metadata = {
+  title: "AI 實戰文章 | Doris AI學院",
+  description: "分享我們在 AI 實戰中的觀察與實踐方法，從 Prompt Engineering 到 Vibe Coding，助您掌握最新 AI 趨勢。",
+};
+
 const fallbackArticles = [
   {
     title: "如何用 AI 做市場研究？",
@@ -30,21 +35,18 @@ export default async function BlogPage({
 }) {
   const selectedCategory = searchParams.category;
 
-  // 1. 獲取所有非草稿文章
   let query = supabase
     .from('articles')
     .select('*')
     .neq('status', '草稿')
     .order('date', { ascending: false });
 
-  // 如果有選擇類別，進行篩選
   if (selectedCategory) {
     query = query.contains('categories', [selectedCategory]);
   }
 
   const { data: articlesFromDb } = await query;
 
-  // 2. 獲取所有現有的類別及其文章數量
   const { data: allPublishedArticles } = await supabase
     .from('articles')
     .select('categories')
@@ -64,9 +66,7 @@ export default async function BlogPage({
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
-  // 如果資料庫是空的或是回傳空陣列，才顯示 Fallback
   const articles = (articlesFromDb && articlesFromDb.length > 0) ? articlesFromDb : (selectedCategory ? [] : fallbackArticles);
-
   const popularPosts = articles.slice(0, 3);
 
   return (
@@ -116,7 +116,6 @@ export default async function BlogPage({
           </div>
 
           <div className="grid lg:grid-cols-[1fr_320px] gap-12 items-start">
-            {/* 左側：文章列表 */}
             <div className="space-y-10">
               <div className="grid gap-8 sm:grid-cols-2">
                 {articles.map((article: any) => (
@@ -173,9 +172,7 @@ export default async function BlogPage({
               </div>
             </div>
 
-            {/* 右側：側邊欄 */}
             <aside className="space-y-10 sticky top-28">
-              {/* 廣告區：最新課程推廣 */}
               <div className="relative rounded-xl bg-slate-950 p-6 overflow-hidden group border border-slate-800">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
                 <div className="relative z-10 space-y-4">
@@ -194,7 +191,6 @@ export default async function BlogPage({
                 </div>
               </div>
 
-              {/* 文章類別 */}
               <div className="space-y-4">
                 <h3 className="text-sm font-black text-slate-950 uppercase tracking-widest flex items-center gap-2">
                   <span className="w-8 h-[2px] bg-blue-600" />
@@ -220,7 +216,6 @@ export default async function BlogPage({
                 </div>
               </div>
 
-              {/* 熱門文章 */}
               <div className="space-y-4">
                 <h3 className="text-sm font-black text-slate-950 uppercase tracking-widest flex items-center gap-2">
                   <span className="w-8 h-[2px] bg-blue-600" />
@@ -248,7 +243,6 @@ export default async function BlogPage({
                 </div>
               </div>
 
-              {/* 標籤雲 (選配) */}
               <div className="pt-6 border-t border-slate-100">
                 <p className="text-[10px] text-slate-400 font-medium mb-4 uppercase tracking-widest text-center">
                   訂閱電子報，獲取最新 AI 觀點
