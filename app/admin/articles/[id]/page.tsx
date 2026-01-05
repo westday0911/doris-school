@@ -49,17 +49,24 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
 
   const fetchArticle = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('articles')
-      .select('*')
-      .eq('id', params.id)
-      .single();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒載入超時
 
-    if (error) {
-      console.error("Error fetching article:", error);
-      alert("載入文章失敗");
-      router.push("/admin/articles");
-    } else {
+    try {
+      // 修正：移除不支援的 .abortSignal()
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('id', params.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching article:", error);
+        alert("載入文章失敗");
+        router.push("/admin/articles");
+        return;
+      }
+
       setFormData({
         title: data.title || "",
         slug: data.slug || "",
@@ -71,8 +78,16 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
         tags: data.tags || [],
         published_at: data.published_at ? new Date(data.published_at).toISOString().slice(0, 16) : ""
       });
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        alert("載入文章超時，請檢查網路。");
+      } else {
+        console.error("Unexpected error in fetchArticle:", err);
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSave = async () => {
@@ -83,70 +98,83 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
 
     setSaving(true);
     
-    // 確保只傳送資料庫有的欄位，避免 schema 衝突
-    const { ...submitData } = formData;
+    // 增加 AbortController 處理超時
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒儲存超時
     
-    // 為了相容性，也更新舊的單一類別欄位 (取第一個類別)
-    const category = formData.categories.length > 0 ? formData.categories[0] : null;
-    
-    console.log("正在儲存文章 ID:", params.id);
-    console.log("提交資料:", { ...submitData, category });
-
-    let error;
-    let resultData;
-
-    if (isNew) {
-      const { data: result, error: insertError } = await supabase
-        .from('articles')
-        .insert([{
-          ...submitData,
-          category,
-          published_at: (formData.status === "已發佈" && !formData.published_at) 
-            ? new Date().toISOString() 
-            : (formData.published_at ? new Date(formData.published_at).toISOString() : null),
-          updated_at: new Date().toISOString()
-        }])
-        .select();
-      error = insertError;
-      resultData = result;
-    } else {
-      // 1. 如果使用者有手動調整時間，優先使用手動時間
-      // 2. 如果狀態改為已發佈且原本沒時間，自動補上現在時間
-      // 3. 如果原本就有時間，無論狀態如何都保留 (除非手動清空)
-      let finalPublishedAt = formData.published_at ? new Date(formData.published_at).toISOString() : null;
-      
-      if (!finalPublishedAt && formData.status === "已發佈") {
-        finalPublishedAt = new Date().toISOString();
+    try {
+      // 0. 檢查 Session 狀態
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("登入已過期，請重新整理頁面並登入。");
       }
 
-      const { data: result, error: updateError } = await supabase
-        .from('articles')
-        .update({
-          ...submitData,
-          category,
-          published_at: finalPublishedAt,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', params.id)
-        .select();
-      error = updateError;
-      resultData = result;
-    }
+      // 確保只傳送資料庫有的欄位，避免 schema 衝突
+      const { ...submitData } = formData;
+      
+      // 為了相容性，也更新舊的單一類別欄位 (取第一個類別)
+      const category = formData.categories.length > 0 ? formData.categories[0] : null;
+      
+      let error;
+      let resultData;
 
-    if (error) {
-      console.error("Supabase Error:", error);
-      alert("儲存失敗：" + error.message);
-    } else if (!resultData || resultData.length === 0) {
-      // 這是最關鍵的檢查：如果回傳資料為空，代表根本沒更新到
-      console.warn("No rows updated. Check if the ID is correct.");
-      alert("儲存失敗：找不到對應的文章紀錄，請嘗試重新整理頁面。");
-    } else {
-      console.log("儲存成功，回傳資料:", resultData);
-      alert(isNew ? "文章已建立" : "變更已儲存");
-      router.push("/admin/articles");
-      router.refresh();
+      if (isNew) {
+        // 修正：移除不支援的 .abortSignal()
+        const { data: result, error: insertError } = await supabase
+          .from('articles')
+          .insert([{
+            ...submitData,
+            category,
+            published_at: (formData.status === "已發佈" && !formData.published_at) 
+              ? new Date().toISOString() 
+              : (formData.published_at ? new Date(formData.published_at).toISOString() : null),
+            updated_at: new Date().toISOString()
+          }])
+          .select();
+        error = insertError;
+        resultData = result;
+      } else {
+        let finalPublishedAt = formData.published_at ? new Date(formData.published_at).toISOString() : null;
+        
+        if (!finalPublishedAt && formData.status === "已發佈") {
+          finalPublishedAt = new Date().toISOString();
+        }
+
+        // 修正：移除不支援的 .abortSignal()
+        const { data: result, error: updateError } = await supabase
+          .from('articles')
+          .update({
+            ...submitData,
+            category,
+            published_at: finalPublishedAt,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', params.id)
+          .select();
+        error = updateError;
+        resultData = result;
+      }
+
+      if (error) {
+        throw error;
+      } else if (!resultData || resultData.length === 0) {
+        throw new Error("找不到對應的文章紀錄，請嘗試重新整理頁面。");
+      } else {
+        alert(isNew ? "文章已建立" : "變更已儲存");
+        router.push("/admin/articles");
+        router.refresh();
+      }
+    } catch (err: any) {
+      console.error("Save error:", err);
+      if (err.name === 'AbortError') {
+        alert("儲存超時，請檢查網路連線或嘗試重新整理頁面。");
+      } else {
+        alert("儲存失敗：" + (err.message || "發生未知錯誤"));
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const addTag = () => {

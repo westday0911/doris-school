@@ -59,58 +59,73 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
 
   const fetchCourseData = async () => {
     setLoading(true);
-    // 1. 抓取課程主表
-    const { data: course, error } = await supabase
-      .from('courses')
-      .select('*')
-      .eq('id', params.id)
-      .single();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒載入超時
 
-    if (error) {
-      console.error("Error fetching course:", error);
-      alert("載入課程失敗");
-      router.push("/admin/courses");
-      return;
+    try {
+      // 1. 抓取課程主表
+      const { data: course, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('id', params.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching course:", error);
+        alert("載入課程失敗");
+        router.push("/admin/courses");
+        return;
+      }
+
+      setFormData({
+        title: course.title || "",
+        slug: course.slug || "",
+        description: course.description || "",
+        content: course.content || "",
+        discount_price: course.discount_price || 0,
+        original_price: course.original_price || 0,
+        duration: course.duration || "",
+        level: course.level || "入門",
+        categories: course.categories || (course.tag ? [course.tag] : []),
+        status: course.status || "預購中",
+        image_url: course.image_url || "",
+        news: course.news || "",
+        intro_video_url: course.intro_video_url || "",
+        custom_code: course.custom_code || { html: "", css: "", js: "" },
+        pricing_options: Array.isArray(course.pricing_options) ? course.pricing_options : []
+      });
+
+      // 2. 抓取單元與課堂 (依 order_index 排序)
+      const { data: modulesData, error: modulesError } = await supabase
+        .from('course_modules')
+        .select(`
+          *,
+          lessons:course_lessons(*)
+        `)
+        .eq('course_id', params.id)
+        .order('order_index', { ascending: true });
+
+      if (modulesError) {
+        console.error("Error fetching modules:", modulesError);
+      } else if (modulesData) {
+        // 確保 lessons 也按照 order_index 排序
+        const sortedModules = modulesData.map(m => ({
+          ...m,
+          lessons: (m.lessons || []).sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
+        }));
+        setModules(sortedModules);
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.error("Fetch course data timeout");
+        alert("載入課程資料超時，請檢查網路。");
+      } else {
+        console.error("Unexpected error in fetchCourseData:", err);
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setLoading(false);
     }
-
-    setFormData({
-      title: course.title || "",
-      slug: course.slug || "",
-      description: course.description || "",
-      content: course.content || "",
-      discount_price: course.discount_price || 0,
-      original_price: course.original_price || 0,
-      duration: course.duration || "",
-      level: course.level || "入門",
-      categories: course.categories || (course.tag ? [course.tag] : []),
-      status: course.status || "預購中",
-      image_url: course.image_url || "",
-      news: course.news || "",
-      intro_video_url: course.intro_video_url || "",
-      custom_code: course.custom_code || { html: "", css: "", js: "" },
-      pricing_options: Array.isArray(course.pricing_options) ? course.pricing_options : []
-    });
-
-    // 2. 抓取單元與課堂 (依 order_index 排序)
-    const { data: modulesData } = await supabase
-      .from('course_modules')
-      .select(`
-        *,
-        lessons:course_lessons(*)
-      `)
-      .eq('course_id', params.id)
-      .order('order_index', { ascending: true });
-
-    if (modulesData) {
-      // 確保 lessons 也按照 order_index 排序
-      const sortedModules = modulesData.map(m => ({
-        ...m,
-        lessons: (m.lessons || []).sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
-      }));
-      setModules(sortedModules);
-    }
-    
-    setLoading(false);
   };
 
   const handleSave = async () => {
@@ -121,7 +136,17 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
 
     setSaving(true);
     
+    // 增加 AbortController 處理超時
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒儲存超時
+    
     try {
+      // 0. 檢查 Session 狀態
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("登入已過期，請重新整理頁面並登入。");
+      }
+
       // 1. 儲存課程主表
       const submitData = {
         ...formData,
@@ -130,6 +155,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
 
       let courseId = params.id;
       if (isNew) {
+        // 修正：移除不支援的 .abortSignal()
         const { data, error: insertError } = await supabase
           .from('courses')
           .insert([submitData])
@@ -138,6 +164,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
         if (insertError) throw new Error("主表儲存失敗：" + insertError.message);
         courseId = data.id;
       } else {
+        // 修正：移除不支援的 .abortSignal()
         const { error: updateError } = await supabase
           .from('courses')
           .update(submitData)
@@ -145,55 +172,80 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
         if (updateError) throw new Error("主表更新失敗：" + updateError.message);
       }
 
-      // 2. 儲存單元與課堂 (先清空舊的再重新寫入)
+      // 2. 儲存單元與課堂 (批次處理)
       // 先刪除所有舊單元 (會透過 Cascade 刪除課堂)
-      const { error: deleteError } = await supabase.from('course_modules').delete().eq('course_id', courseId);
-      if (deleteError) throw new Error("更新大綱失敗(清理舊資料)：" + deleteError.message);
+      // 修正：移除不支援的 .abortSignal()
+      const { error: deleteError } = await supabase
+        .from('course_modules')
+        .delete()
+        .eq('course_id', courseId);
+      if (deleteError) throw new Error("清理舊資料失敗：" + deleteError.message);
       
-      // 依序建立單元，並收集所有課堂準備一次性寫入 (效率更高)
-      for (let i = 0; i < modules.length; i++) {
-        const m = modules[i];
-        const { data: newModule, error: mError } = await supabase
+      if (modules.length > 0) {
+        const modulesToInsert = modules.map((m, i) => ({
+          course_id: courseId,
+          title: m.title,
+          order_index: i
+        }));
+
+        // 修正：移除不支援的 .abortSignal()
+        const { data: newModules, error: mError } = await supabase
           .from('course_modules')
-          .insert({
-            course_id: courseId,
-            title: m.title,
-            order_index: i
-          })
-          .select()
-          .single();
+          .insert(modulesToInsert)
+          .select();
 
-        if (mError) throw new Error(`單元 "${m.title}" 儲存失敗：` + mError.message);
+        if (mError) throw new Error("單元儲存失敗：" + mError.message);
 
-        if (m.lessons && m.lessons.length > 0) {
-          const lessonsToInsert = m.lessons.map((l: any, lIdx: number) => ({
-            course_id: courseId,
-            module_id: newModule.id,
-            title: l.title,
-            duration: l.duration,
-            video_url: l.video_url,
-            supplemental_info: l.supplemental_info,
-            attachments: l.attachments || [],
-            order_index: lIdx
-          }));
-          
-          const { error: lError } = await supabase.from('course_lessons').insert(lessonsToInsert);
-          if (lError) throw new Error(`單元 "${m.title}" 的課堂儲存失敗：` + lError.message);
+        const lessonsToInsert: any[] = [];
+        modules.forEach((m, mIdx) => {
+          const createdModule = newModules.find(nm => nm.order_index === mIdx);
+          if (createdModule && m.lessons && m.lessons.length > 0) {
+            m.lessons.forEach((l: any, lIdx: number) => {
+              lessonsToInsert.push({
+                course_id: courseId,
+                module_id: createdModule.id,
+                title: l.title,
+                duration: l.duration,
+                video_url: l.video_url,
+                supplemental_info: l.supplemental_info,
+                attachments: l.attachments || [],
+                order_index: lIdx
+              });
+            });
+          }
+        });
+
+        if (lessonsToInsert.length > 0) {
+          // 修正：移除不支援的 .abortSignal()
+          const { error: lError } = await supabase
+            .from('course_lessons')
+            .insert(lessonsToInsert);
+          if (lError) throw new Error("課堂儲存失敗：" + lError.message);
         }
       }
 
-      setSaving(false);
-      alert(isNew ? "課程已建立" : "變更已儲存");
+      clearTimeout(timeoutId);
       
-      if (isNew) {
-        router.push(`/admin/courses/${courseId}`);
-      } else {
-        router.refresh();
-        fetchCourseData(); // 重新整理本地數據
-      }
+      // 成功後延遲一下再顯示 alert，並在 alert 關閉後關掉 saving 狀態
+      setTimeout(() => {
+        alert(isNew ? "課程已建立" : "變更已儲存");
+        setSaving(false); // 放在 alert 之後，確保 alert 關閉後轉圈才消失
+        if (isNew) {
+          router.push(`/admin/courses/${courseId}`);
+        } else {
+          router.refresh();
+          fetchCourseData();
+        }
+      }, 100);
+
     } catch (err: any) {
+      clearTimeout(timeoutId);
       console.error("Save error:", err);
-      alert(err.message || "發生未知錯誤");
+      if (err.name === 'AbortError') {
+        alert("儲存超時，請檢查網路連線或嘗試重新整理頁面。");
+      } else {
+        alert(err.message || "發生未知錯誤");
+      }
       setSaving(false);
     }
   };
@@ -296,15 +348,15 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
           {/* 課程大綱 (新介面) */}
           <section className="bg-white p-8 rounded-2xl border border-slate-100 space-y-6 shadow-sm">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 border-l-4 border-blue-600 pl-4">階層式大綱管理</h3>
-              <Button size="sm" variant="outline" className="gap-2" onClick={addModule}><Plus size={14} /> 新增單元</Button>
+              <h3 className="font-bold text-slate-900 border-l-4 border-blue-600 pl-4">課程大綱管理 (章節與小單元)</h3>
+              <Button size="sm" variant="outline" className="gap-2" onClick={addModule}><Plus size={14} /> 新增章節</Button>
             </div>
             <div className="space-y-6">
               {modules.map((module, mIdx) => (
                 <div key={mIdx} className="p-6 rounded-2xl border border-slate-200 bg-slate-50/30 space-y-4">
                   <div className="flex items-center gap-3">
-                    <Badge className="bg-slate-950">單元 {mIdx + 1}</Badge>
-                    <input className="flex-1 bg-transparent border-0 border-b border-slate-200 text-lg font-bold focus:border-blue-600 outline-none" placeholder="單元名稱" value={module.title} onChange={(e) => updateModuleTitle(mIdx, e.target.value)} />
+                    <Badge className="bg-slate-950">章節 {mIdx + 1}</Badge>
+                    <input className="flex-1 bg-transparent border-0 border-b border-slate-200 text-lg font-bold focus:border-blue-600 outline-none" placeholder="章節名稱 (例如：第一章：AI 基礎)" value={module.title} onChange={(e) => updateModuleTitle(mIdx, e.target.value)} />
                     <Button size="icon" variant="ghost" className="text-slate-400 hover:text-red-500" onClick={() => removeModule(mIdx)}><Trash2 size={16} /></Button>
                   </div>
                   
@@ -313,12 +365,18 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
                       <div key={lIdx} className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-4">
                         <div className="flex gap-4">
                           <div className="flex-1 space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">課堂名稱</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">小單元名稱</label>
                             <input className="w-full px-3 py-2 rounded-lg border border-slate-100 text-sm font-medium outline-none focus:ring-1 focus:ring-blue-500" value={lesson.title} onChange={(e) => updateLesson(mIdx, lIdx, 'title', e.target.value)} />
                           </div>
                           <div className="w-32 space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">長度</label>
-                            <input className="w-full px-3 py-2 rounded-lg border border-slate-100 text-sm outline-none" placeholder="15:00" value={lesson.duration} onChange={(e) => updateLesson(mIdx, lIdx, 'duration', e.target.value)} />
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">時長 (分鐘)</label>
+                            <input 
+                              type="number"
+                              className="w-full px-3 py-2 rounded-lg border border-slate-100 text-sm outline-none" 
+                              placeholder="15" 
+                              value={lesson.duration} 
+                              onChange={(e) => updateLesson(mIdx, lIdx, 'duration', parseInt(e.target.value) || 0)} 
+                            />
                           </div>
                           <Button size="icon" variant="ghost" className="mt-6 text-slate-300 hover:text-red-500" onClick={() => removeLesson(mIdx, lIdx)}><Trash2 size={14} /></Button>
                         </div>
@@ -335,14 +393,14 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
                         </div>
                       </div>
                     ))}
-                    <button className="flex items-center gap-2 text-xs text-blue-600 font-bold hover:text-blue-700" onClick={() => addLesson(mIdx)}><PlusCircle size={14} /> 新增課堂</button>
+                    <button className="flex items-center gap-2 text-xs text-blue-600 font-bold hover:text-blue-700" onClick={() => addLesson(mIdx)}><PlusCircle size={14} /> 新增小單元</button>
                   </div>
                 </div>
               ))}
               {modules.length === 0 && (
                 <div className="text-center py-12 border-2 border-dashed border-slate-100 rounded-2xl text-slate-400">
                   <ListTree className="mx-auto mb-2 opacity-20" size={32} />
-                  <p className="text-sm font-medium">尚未新增單元</p>
+                  <p className="text-sm font-medium">尚未新增章節</p>
                 </div>
               )}
             </div>

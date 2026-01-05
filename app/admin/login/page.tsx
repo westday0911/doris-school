@@ -26,7 +26,8 @@ export default function AdminLoginPage() {
   // 如果已經是管理員且已登入，直接導向後台
   useEffect(() => {
     if (!authLoading && user && profile?.role === 'admin') {
-      router.push("/admin/dashboard");
+      console.log("AdminLoginPage: Auth state detected, redirecting...");
+      router.replace("/admin/dashboard");
     }
   }, [user, profile, authLoading, router]);
 
@@ -37,61 +38,60 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError(null);
 
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn("Login process is taking too long...");
+      }
+    }, 15000);
+
     try {
-      // 1. 登入 Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      console.log("Starting Non-blocking Login...");
+      
+      // 我們不使用 await 死等這個 Promise，改用 .then()
+      // 因為在您的環境中，這個 await 似乎永遠不會 resolve
+      supabase.auth.signInWithPassword({
         email,
         password,
+      }).then(({ data, error: authError }) => {
+        if (authError) {
+          console.error("Login Promise Error:", authError);
+          setError(authError.message);
+          setLoading(false);
+        } else {
+          console.log("Login Promise Success:", !!data?.user);
+          // 成功後的跳轉會由上方的 useEffect 自動偵測 user 變化來執行
+        }
+      }).catch(err => {
+        console.error("Login Promise Fatal Error:", err);
+        setError("系統異常，請嘗試重新整理頁面。");
+        setLoading(false);
       });
 
-      if (authError) throw authError;
-
-      // 2. 檢查 Profile 中的 Role 是否為 admin
-      // 這裡直接查資料庫確保拿到的資料是最新的
-      console.log("Checking admin profile for user:", authData.user.id);
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', authData.user.id)
-        .single();
-
-      if (profileError) {
-        console.error("Profile fetch error:", profileError);
-        // 如果找不到 Profile，嘗試建立一個（預防舊帳號沒有 Profile）
-        if (profileError.code === 'PGRST116') { // No rows found
-           await supabase.from('profiles').insert({
-             id: authData.user.id,
-             email: authData.user.email,
-             name: authData.user.email?.split('@')[0],
-             role: 'member' // 預設為 member，所以會再下方被擋掉，但至少有了紀錄
-           });
-           throw new Error("您的帳號尚未設定管理員權限");
-        }
-        throw profileError;
-      }
-
-      console.log("Profile role:", profileData.role);
-      if (profileData.role !== 'admin') {
-        // 如果不是管理員，登出並報錯
-        await supabase.auth.signOut();
-        throw new Error("權限不足：您不是管理員 (目前權限: " + profileData.role + ")");
-      }
-
-      console.log("Login successful, redirecting to dashboard...");
-      // 3. 成功，導向後台
-      router.push("/admin/dashboard");
-      // 備案：如果 push 沒反應，3秒後嘗試強制重導
-      setTimeout(() => {
-        if (window.location.pathname === '/admin/login') {
-          window.location.href = '/admin/dashboard';
+      // 設立一個「強制探測」保險
+      // 就算 Promise 沒回應，我們 3 秒後主動問一次 Supabase：到底登入成功沒？
+      setTimeout(async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log("Session detected via insurance check, hard redirecting...");
+          window.location.href = "/admin/dashboard";
+        } else {
+          // 如果 10 秒後還沒反應，才真正放棄
+          setTimeout(() => {
+            if (loading) {
+              setError("連線反應過慢，請檢查網路或稍後再試。");
+              setLoading(false);
+            }
+          }, 7000);
         }
       }, 3000);
+
     } catch (err: any) {
-      setError(err.message || "登入失敗，請檢查帳號密碼");
-      setLoading(false); // 發生錯誤時才停止轉圈
-      console.error("Admin Login Error:", err);
+      console.error("Outer Login Error:", err);
+      setError("發生錯誤，請稍後再試");
+      setLoading(false);
+    } finally {
+      clearTimeout(timeoutId);
     }
-    // 注意：成功時不呼叫 setLoading(false)，讓轉圈持續到轉頁完成
   };
 
   return (
@@ -152,7 +152,7 @@ export default function AdminLoginPage() {
                 disabled={loading}
               >
                 {loading ? <Loader2 className="animate-spin mr-2" /> : null}
-                {loading ? "登入中..." : "進入管理系統"}
+                {loading ? "處理中..." : "進入管理系統"}
               </Button>
               <div className="text-center mt-4">
                 <Link href="/" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">

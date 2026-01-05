@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useRef, useState } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import MediaLibrary from '@/components/media/MediaLibrary';
 
@@ -265,37 +265,39 @@ const MenuBar = ({ editor }: { editor: any }) => {
 };
 
 export default function TiptapEditor({ content, onChange, placeholder }: TiptapEditorProps) {
+  const extensions = useMemo(() => [
+    StarterKit.configure({
+      dropcursor: {
+        color: '#3b82f6',
+        width: 2,
+      },
+    }),
+    Underline,
+    Link.configure({
+      openOnClick: false,
+      HTMLAttributes: {
+        class: 'text-blue-600 underline cursor-pointer',
+      },
+    }),
+    Image.configure({
+      HTMLAttributes: {
+        class: 'rounded-lg max-w-full h-auto shadow-md my-4 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all',
+      },
+    }),
+    Youtube.configure({
+      controls: true,
+      nocookie: true,
+      HTMLAttributes: {
+        class: 'aspect-video w-full rounded-lg shadow-md my-4',
+      },
+    }),
+    Placeholder.configure({
+      placeholder: placeholder || '開始撰寫您的內容...',
+    }),
+  ], [placeholder]);
+
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        dropcursor: {
-          color: '#3b82f6',
-          width: 2,
-        },
-      }),
-      Underline,
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-blue-600 underline cursor-pointer',
-        },
-      }),
-      Image.configure({
-        HTMLAttributes: {
-          class: 'rounded-lg max-w-full h-auto shadow-md my-4 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all',
-        },
-      }),
-      Youtube.configure({
-        controls: true,
-        nocookie: true,
-        HTMLAttributes: {
-          class: 'aspect-video w-full rounded-lg shadow-md my-4',
-        },
-      }),
-      Placeholder.configure({
-        placeholder: placeholder || '開始撰寫您的內容...',
-      }),
-    ],
+    extensions,
     content: content,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {

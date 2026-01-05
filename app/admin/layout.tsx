@@ -45,32 +45,41 @@ export default function AdminLayout({
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
 
-    // 只有在 loading 結束後才進行導向判斷
-    if (!loading && !isLoginPage) {
-      if (!user) {
-        router.push("/admin/login");
-      } else if (profile) {
-        if (profile.role !== 'admin') {
-          router.push("/admin/login");
-        } else {
+    // 只有在非登入頁面才啟動安全超時
+    let safetyTimeoutId: NodeJS.Timeout;
+    if (!isLoginPage) {
+      safetyTimeoutId = setTimeout(() => {
+        if (isAuthorizing) {
+          console.warn("AdminLayout: Authorization taking too long, unblocking UI");
           setIsAuthorizing(false);
         }
+      }, 10000); // 增加到 10 秒
+    }
+
+    // 判斷邏輯
+    if (isLoginPage) {
+      setIsAuthorizing(false);
+    } else if (!loading) {
+      if (!user) {
+        router.replace("/admin/login");
+        setIsAuthorizing(false);
+      } else if (profile) {
+        setIsAuthorizing(false); 
+        if (profile.role !== 'admin') {
+          router.replace("/admin/login");
+        }
       } else {
-        // 安全機制：如果有 user 但過了 5 秒還沒抓到 profile，可能是網路問題或權限出錯
-        // 強制檢查一次，若還是沒資料則跳轉登入
         timeoutId = setTimeout(() => {
           if (!profile) {
-            console.warn("Auth timeout: Profile not found after 5s");
-            router.push("/admin/login");
+            setIsAuthorizing(false); 
           }
-        }, 5000);
+        }, 4000);
       }
-    } else if (isLoginPage) {
-      setIsAuthorizing(false);
     }
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
+      if (safetyTimeoutId) clearTimeout(safetyTimeoutId);
     };
   }, [user, profile, loading, pathname, router, isLoginPage]);
 
@@ -79,20 +88,30 @@ export default function AdminLayout({
     router.push("/admin/login");
   };
 
-  if (isLoginPage) return <>{children}</>;
-
-  // 核心邏輯優化：
-  // 1. 如果已經有 profile 且是 admin，絕對不要顯示全螢幕轉圈 (即使 loading 或 isAuthorizing 為 true)
-  // 2. 如果連 profile 都還沒有，且還在 loading 或正在授權中，才顯示轉圈
   const isAdmin = profile?.role === 'admin';
   const showLoader = !isAdmin && (loading || isAuthorizing);
+
+  // 調試資訊（僅開發環境可見）
+  useEffect(() => {
+    if (showLoader && !isLoginPage) {
+      const timer = setTimeout(() => {
+        console.log("Auth Status Check:", { loading, isAuthorizing, hasUser: !!user, hasProfile: !!profile, role: profile?.role });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showLoader, loading, isAuthorizing, user, profile, isLoginPage]);
+
+  if (isLoginPage) return <>{children}</>;
 
   if (showLoader && !isLoginPage) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="animate-spin text-blue-600" size={40} />
-          <p className="text-sm font-medium text-slate-500">正在驗證權限...</p>
+          <div className="text-center">
+            <p className="text-sm font-medium text-slate-500">正在驗證權限...</p>
+            <p className="text-xs text-slate-400 mt-2">如果長時間沒反應，請嘗試 <button onClick={() => window.location.reload()} className="text-blue-500 underline">重新整理</button> 或 <button onClick={handleLogout} className="text-red-500 underline">重新登入</button></p>
+          </div>
         </div>
       </div>
     );

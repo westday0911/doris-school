@@ -26,19 +26,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     // 獲取初始 Session
     const getInitialSession = async () => {
+      // 安全保險：8秒後無論如何都結束 loading
+      const safetyTimeout = setTimeout(() => {
+        if (mounted && loading) {
+          console.warn("Auth: Safety timeout triggered");
+          setLoading(false);
+        }
+      }, 8000);
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
+
         if (session?.user) {
           setUser(session.user);
-          // 這裡先抓 profile，抓完再關掉 loading
           await fetchProfile(session.user.id);
         }
       } catch (err) {
         console.error("Error in getInitialSession:", err);
       } finally {
-        setLoading(false);
+        clearTimeout(safetyTimeout);
+        if (mounted) setLoading(false);
       }
     };
 
@@ -47,55 +59,69 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // 監聽 Auth 狀態變化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
         console.log("Auth Event:", event);
         
-        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-          const currentUser = session?.user ?? null;
-          setUser(currentUser);
-          if (currentUser) {
-            await fetchProfile(currentUser.id);
-          }
-          setLoading(false);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-        } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          const currentUser = session?.user ?? null;
-          if (currentUser) {
+        // 每次事件都給一個 5 秒強制結束 loading 的保險
+        const eventTimeout = setTimeout(() => {
+          if (mounted) setLoading(false);
+        }, 5000);
+
+        const currentUser = session?.user ?? null;
+        
+        try {
+          if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
             setUser(currentUser);
-            fetchProfile(currentUser.id);
+            if (currentUser) {
+              await fetchProfile(currentUser.id);
+            }
+          } else if (event === 'SIGNED_OUT') {
+            setUser(null);
+            setProfile(null);
+          } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+            setUser(currentUser);
+            if (currentUser) {
+              await fetchProfile(currentUser.id);
+            }
           }
+        } finally {
+          clearTimeout(eventTimeout);
+          setLoading(false);
         }
       }
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
   const fetchProfile = async (userId: string) => {
-    // 增加 AbortController 或簡單的超時判斷，避免網路掛掉時卡死
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超時
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 縮短為 5 秒超時
 
     try {
+      // 修正：移除不支援的 .abortSignal() 鏈式調用，改用標準查詢
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
         .single();
 
-      clearTimeout(timeoutId);
-
       if (error) {
         console.error("Error fetching profile:", error);
       } else {
         setProfile(data);
       }
-    } catch (err) {
-      console.error("Unexpected error in fetchProfile:", err);
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.warn("fetchProfile aborted due to timeout");
+      } else {
+        console.error("Unexpected error in fetchProfile:", err);
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
   };
 
