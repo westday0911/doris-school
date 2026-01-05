@@ -28,12 +28,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // 獲取初始 Session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        await fetchProfile(session.user.id);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          // 這裡先抓 profile，抓完再關掉 loading
+          await fetchProfile(session.user.id);
+        }
+      } catch (err) {
+        console.error("Error in getInitialSession:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     getInitialSession();
@@ -41,15 +47,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // 監聽 Auth 狀態變化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setLoading(true); // 狀態變化時先進入載入中
-        if (session?.user) {
-          setUser(session.user);
-          await fetchProfile(session.user.id);
-        } else {
+        console.log("Auth Event:", event);
+        
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          const currentUser = session?.user ?? null;
+          setUser(currentUser);
+          if (currentUser) {
+            await fetchProfile(currentUser.id);
+          }
+          setLoading(false);
+        } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setProfile(null);
+          setLoading(false);
+        } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          const currentUser = session?.user ?? null;
+          if (currentUser) {
+            setUser(currentUser);
+            fetchProfile(currentUser.id);
+          }
         }
-        setLoading(false);
       }
     );
 
@@ -59,14 +76,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    // 增加 AbortController 或簡單的超時判斷，避免網路掛掉時卡死
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超時
 
-    if (!error) {
-      setProfile(data);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+      clearTimeout(timeoutId);
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+      } else {
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error("Unexpected error in fetchProfile:", err);
     }
   };
 

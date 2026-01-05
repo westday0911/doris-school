@@ -43,15 +43,35 @@ export default function AdminLayout({
   const isLoginPage = pathname === "/admin/login";
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    // 只有在 loading 結束後才進行導向判斷
     if (!loading && !isLoginPage) {
-      if (!user || profile?.role !== 'admin') {
+      if (!user) {
         router.push("/admin/login");
+      } else if (profile) {
+        if (profile.role !== 'admin') {
+          router.push("/admin/login");
+        } else {
+          setIsAuthorizing(false);
+        }
       } else {
-        setIsAuthorizing(false);
+        // 安全機制：如果有 user 但過了 5 秒還沒抓到 profile，可能是網路問題或權限出錯
+        // 強制檢查一次，若還是沒資料則跳轉登入
+        timeoutId = setTimeout(() => {
+          if (!profile) {
+            console.warn("Auth timeout: Profile not found after 5s");
+            router.push("/admin/login");
+          }
+        }, 5000);
       }
     } else if (isLoginPage) {
       setIsAuthorizing(false);
     }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [user, profile, loading, pathname, router, isLoginPage]);
 
   const handleLogout = async () => {
@@ -61,7 +81,13 @@ export default function AdminLayout({
 
   if (isLoginPage) return <>{children}</>;
 
-  if (loading || isAuthorizing) {
+  // 核心邏輯優化：
+  // 1. 如果已經有 profile 且是 admin，絕對不要顯示全螢幕轉圈 (即使 loading 或 isAuthorizing 為 true)
+  // 2. 如果連 profile 都還沒有，且還在 loading 或正在授權中，才顯示轉圈
+  const isAdmin = profile?.role === 'admin';
+  const showLoader = !isAdmin && (loading || isAuthorizing);
+
+  if (showLoader && !isLoginPage) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">

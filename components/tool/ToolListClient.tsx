@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 
 const toolTypes = ["全部", "AI Agent", "小工具", "網頁版型"];
 
@@ -25,27 +26,7 @@ export default function ToolListClient({ initialTools }: { initialTools: any[] }
 
   return (
     <div className="relative bg-white min-h-screen">
-      <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="container-base flex h-16 items-center justify-between">
-          <Link href="/" className="text-lg font-bold tracking-tight text-slate-950">
-            Doris AI學院
-          </Link>
-          <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-            <Link className="transition-colors hover:text-slate-950" href="/courses">熱門課程</Link>
-            <Link className="transition-colors hover:text-slate-950" href="/blog">AI 學習文章</Link>
-            <Link className="text-slate-950 font-bold" href="/tools">AI 工具</Link>
-            <Link className="transition-colors hover:text-slate-950" href="/services/consulting">服務</Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <Link href="/auth/login" className="hidden text-sm font-medium text-slate-600 hover:text-slate-950 sm:block">
-              登入
-            </Link>
-            <Button size="sm" asChild>
-              <Link href="/auth/register">立即加入</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="py-16 sm:py-24">
         <div className="container-base">
@@ -119,21 +100,7 @@ export default function ToolListClient({ initialTools }: { initialTools: any[] }
         </div>
       </main>
 
-      <footer className="border-t border-slate-200 bg-slate-50/50 py-12">
-        <div className="container-base flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
-            <div className="text-xl font-bold tracking-tight text-slate-950">Doris AI學院</div>
-            <p className="text-sm text-slate-500 font-medium">用 AI 和科技 解決問題</p>
-          </div>
-          <div className="flex flex-wrap gap-8 text-sm font-medium text-slate-600">
-            <Link href="/" className="hover:text-slate-950 transition-colors">首頁</Link>
-            <Link href="/courses" className="hover:text-slate-950 transition-colors">熱門課程</Link>
-            <Link href="/blog" className="hover:text-slate-950 transition-colors">部落格</Link>
-            <Link href="/tools" className="text-slate-950 font-bold">AI 工具</Link>
-            <Link href="/services/consulting" className="hover:text-slate-950 transition-colors">服務</Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

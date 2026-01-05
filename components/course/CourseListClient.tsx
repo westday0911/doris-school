@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 
 export default function CourseListClient({ initialCourses }: { initialCourses: any[] }) {
   const courses = initialCourses;
@@ -79,20 +80,7 @@ export default function CourseListClient({ initialCourses }: { initialCourses: a
         </div>
       </main>
 
-      <footer className="border-t border-slate-200 bg-slate-50/50 py-12">
-        <div className="container-base flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
-            <div className="text-xl font-bold tracking-tight text-slate-950">Doris AI學院</div>
-            <p className="text-sm text-slate-500 font-medium">用 AI 和科技 解決問題</p>
-          </div>
-          <div className="flex flex-wrap gap-8 text-sm font-medium text-slate-600">
-            <Link href="/" className="hover:text-slate-950 transition-colors">首頁</Link>
-            <Link href="/courses" className="text-slate-950 font-bold">熱門課程</Link>
-            <Link href="/blog" className="hover:text-slate-950 transition-colors">部落格</Link>
-            <a href="/#cta" className="hover:text-slate-950 transition-colors">聯絡我們</a>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

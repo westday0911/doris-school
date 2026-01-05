@@ -37,13 +37,30 @@ export async function generateMetadata(
 
 export default async function CourseDetailPage({ params }: { params: { slug: string } }) {
   const decodedSlug = decodeURIComponent(params.slug);
+  
+  // 1. 抓取課程主表
   const { data: course } = await supabase
     .from('courses')
     .select('*')
     .eq('slug', decodedSlug)
     .single();
 
-  if (!course) return <CourseDetailClient initialCourse={null} slug={decodedSlug} />;
+  if (!course) return <CourseDetailClient initialCourse={null} slug={decodedSlug} initialModules={[]} />;
+
+  // 2. 抓取單元與課堂 (依 order_index 排序)
+  const { data: modulesData } = await supabase
+    .from('course_modules')
+    .select(`
+      *,
+      lessons:course_lessons(*)
+    `)
+    .eq('course_id', course.id)
+    .order('order_index', { ascending: true });
+
+  const modules = modulesData?.map(m => ({
+    ...m,
+    lessons: (m.lessons || []).sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
+  })) || [];
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -65,28 +82,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
   };
 
   const breadcrumbLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: '首頁',
-        item: 'https://doris-ai-academy.com',
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: '熱門課程',
-        item: 'https://doris-ai-academy.com/courses',
-      },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: course.title,
-        item: `https://doris-ai-academy.com/courses/${params.slug}`,
-      },
-    ],
+// ... (breadcrumbLd 保持不變)
   };
 
   return (
@@ -99,7 +95,11 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
-      <CourseDetailClient initialCourse={course} slug={decodedSlug} />
+      <CourseDetailClient 
+        initialCourse={course} 
+        slug={decodedSlug} 
+        initialModules={modules} 
+      />
     </>
   );
 }

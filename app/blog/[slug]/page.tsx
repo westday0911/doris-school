@@ -11,6 +11,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 import { Metadata, ResolvingMetadata } from 'next';
 
 type Props = {
@@ -378,21 +379,7 @@ async function BlogPostContent(article: any, slugParam: string) {
         </div>
       </main>
 
-      <footer className="border-t border-slate-200 bg-slate-50/50 py-12">
-        <div className="container-base flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
-            <div className="text-xl font-bold tracking-tight text-slate-950">Doris AI學院</div>
-            <p className="text-sm text-slate-500 font-medium">用 AI 和科技 解決問題</p>
-          </div>
-          <div className="flex flex-wrap gap-8 text-sm font-medium text-slate-600">
-            <Link href="/" className="hover:text-slate-950 transition-colors">首頁</Link>
-            <Link href="/courses" className="hover:text-slate-950 transition-colors">熱門課程</Link>
-            <Link href="/blog" className="text-slate-950 font-bold">部落格</Link>
-            <Link href="/tools" className="hover:text-slate-950 transition-colors">AI 工具</Link>
-            <Link href="/services/consulting" className="hover:text-slate-950 transition-colors">服務</Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
