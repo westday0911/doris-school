@@ -58,7 +58,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   // 1. 嘗試多種匹配方式：解碼後的中文、原始參數、或是轉小寫後的編碼
   const { data: articlesFound, error: fetchError } = await supabase
     .from('articles')
-    .select('*')
+    .select('*, author:profiles(name, avatar_url)')
     .in('slug', [decodedSlug, params.slug, lowerEncodedSlug])
     .limit(1);
 
@@ -103,7 +103,7 @@ async function BlogPostContent(article: any, slugParam: string) {
     .from('articles')
     .select('*')
     .neq('status', '草稿')
-    .order('date', { ascending: false });
+    .order('published_at', { ascending: false });
 
   const articles = allArticles || [];
   
@@ -144,11 +144,11 @@ async function BlogPostContent(article: any, slugParam: string) {
     '@type': 'BlogPosting',
     headline: article.title,
     image: article.image,
-    datePublished: article.date,
-    dateModified: article.updated_at || article.date,
+    datePublished: article.published_at || article.created_at,
+    dateModified: article.updated_at || article.published_at || article.created_at,
     author: {
       '@type': 'Person',
-      name: 'Doris',
+      name: article.author?.name || 'Doris',
     },
     description: article.excerpt,
     publisher: {
@@ -229,12 +229,20 @@ async function BlogPostContent(article: any, slugParam: string) {
                   </h1>
                   <div className="flex items-center gap-6 text-sm text-slate-500 border-b border-slate-100 pb-6">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center text-white text-[10px] font-bold">D</div>
-                      <span className="font-bold text-slate-900">Doris</span>
+                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
+                        {article.author?.avatar_url ? (
+                          <img src={article.author.avatar_url} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-slate-900 flex items-center justify-center text-white text-[10px] font-bold">
+                            {(article.author?.name?.[0] || 'D').toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <span className="font-bold text-slate-900">{article.author?.name || 'Doris'}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar size={14} />
-                      <span>{article.date}</span>
+                      <span>{article.published_at ? new Date(article.published_at).toLocaleDateString() : (article.created_at ? new Date(article.created_at).toLocaleDateString() : "N/A")}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock size={14} />
@@ -274,7 +282,9 @@ async function BlogPostContent(article: any, slugParam: string) {
                       <h4 className="font-bold text-slate-900 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2">
                         {rec.title}
                       </h4>
-                      <p className="text-[10px] text-slate-400 font-medium">{rec.date}</p>
+                      <p className="text-[10px] text-slate-400 font-medium">
+                        {rec.published_at ? new Date(rec.published_at).toLocaleDateString() : (rec.created_at ? new Date(rec.created_at).toLocaleDateString() : "N/A")}
+                      </p>
                     </Link>
                   ))}
                 </div>
@@ -354,7 +364,9 @@ async function BlogPostContent(article: any, slugParam: string) {
                         <h4 className="text-xs font-bold text-slate-900 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2">
                           {post.title}
                         </h4>
-                        <span className="text-[10px] text-slate-400">{post.date}</span>
+                        <span className="text-[10px] text-slate-400">
+                          {post.published_at ? new Date(post.published_at).toLocaleDateString() : (post.created_at ? new Date(post.created_at).toLocaleDateString() : "N/A")}
+                        </span>
                       </div>
                     </Link>
                   ))}

@@ -23,7 +23,8 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
     categories: [] as string[],
     status: "草稿",
     image: "",
-    tags: [] as string[]
+    tags: [] as string[],
+    published_at: ""
   });
 
   const [tagInput, setTagInput] = useState("");
@@ -67,7 +68,8 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
         categories: data.categories || (data.category ? [data.category] : []),
         status: data.status || "草稿",
         image: data.image || "",
-        tags: data.tags || []
+        tags: data.tags || [],
+        published_at: data.published_at ? new Date(data.published_at).toISOString().slice(0, 16) : ""
       });
     }
     setLoading(false);
@@ -94,29 +96,41 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
     let resultData;
 
     if (isNew) {
-      const { data, error: insertError } = await supabase
+      const { data: result, error: insertError } = await supabase
         .from('articles')
         .insert([{
           ...submitData,
           category,
-          date: new Date().toISOString().split('T')[0],
+          published_at: (formData.status === "已發佈" && !formData.published_at) 
+            ? new Date().toISOString() 
+            : (formData.published_at ? new Date(formData.published_at).toISOString() : null),
           updated_at: new Date().toISOString()
         }])
         .select();
       error = insertError;
-      resultData = data;
+      resultData = result;
     } else {
-      const { data, error: updateError } = await supabase
+      // 1. 如果使用者有手動調整時間，優先使用手動時間
+      // 2. 如果狀態改為已發佈且原本沒時間，自動補上現在時間
+      // 3. 如果原本就有時間，無論狀態如何都保留 (除非手動清空)
+      let finalPublishedAt = formData.published_at ? new Date(formData.published_at).toISOString() : null;
+      
+      if (!finalPublishedAt && formData.status === "已發佈") {
+        finalPublishedAt = new Date().toISOString();
+      }
+
+      const { data: result, error: updateError } = await supabase
         .from('articles')
         .update({
           ...submitData,
           category,
+          published_at: finalPublishedAt,
           updated_at: new Date().toISOString()
         })
         .eq('id', params.id)
         .select();
       error = updateError;
-      resultData = data;
+      resultData = result;
     }
 
     if (error) {
@@ -249,6 +263,17 @@ export default function AdminArticleEditPage({ params }: { params: { id: string 
                 <option>草稿</option>
                 <option>已發佈</option>
               </select>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-slate-700 block">發佈時間 (可手動調整)</label>
+              <input 
+                type="datetime-local"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white outline-none"
+                value={formData.published_at}
+                onChange={(e) => setFormData({ ...formData, published_at: e.target.value })}
+              />
+              <p className="text-[10px] text-slate-400">若狀態為已發佈且此欄位為空，儲存時會自動填入目前時間。</p>
             </div>
 
             <div className="space-y-3">

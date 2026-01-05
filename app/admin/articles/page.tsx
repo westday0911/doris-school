@@ -116,7 +116,7 @@ export default function AdminArticlesPage() {
                     </Badge>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500 font-medium text-right whitespace-nowrap">
-                    {article.date || (article.created_at ? new Date(article.created_at).toLocaleDateString() : "N/A")}
+                    {article.published_at ? new Date(article.published_at).toLocaleDateString() : (article.created_at ? new Date(article.created_at).toLocaleDateString() : "N/A")}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500 text-right font-mono">
                     {(article.views || 0).toLocaleString()}

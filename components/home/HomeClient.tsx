@@ -12,6 +12,7 @@ import {
 import { BrowserMockup } from "@/components/BrowserMockup";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
+import { useAuth } from "@/components/providers/auth-provider";
 
 export default function HomeClient({ 
   initialCourses, 
@@ -20,6 +21,7 @@ export default function HomeClient({
   initialCourses: any[], 
   initialArticles: any[] 
 }) {
+  const { user, loading } = useAuth();
   const courses = initialCourses;
   const articles = initialArticles;
 
@@ -76,9 +78,21 @@ export default function HomeClient({
                   <Button size="lg" className="shadow-md" asChild>
                     <Link href="/courses">探索最新課程</Link>
                   </Button>
-                  <Button variant="outline" size="lg">
-                    下載課程企劃
-                  </Button>
+                  {!loading && !user && (
+                    <>
+                      <Button variant="outline" size="lg" asChild>
+                        <Link href="/auth/login">登入系統</Link>
+                      </Button>
+                      <Button variant="secondary" size="lg" className="bg-blue-50 text-blue-600 hover:bg-blue-100 border-none" asChild>
+                        <Link href="/auth/register">立即加入</Link>
+                      </Button>
+                    </>
+                  )}
+                  {user && (
+                    <Button variant="outline" size="lg" asChild>
+                      <Link href="/member/dashboard">進入會員中心</Link>
+                    </Button>
+                  )}
                 </div>
                 <div className="flex items-center gap-6 text-sm font-medium text-slate-500">
                   <span>50+ 企業合作</span>
@@ -362,7 +376,7 @@ export default function HomeClient({
                     </div>
                     <CardHeader className="p-4 space-y-2">
                       <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400">
-                        <span>{article.date}</span>
+                        <span>{article.published_at ? new Date(article.published_at).toLocaleDateString() : (article.created_at ? new Date(article.created_at).toLocaleDateString() : "N/A")}</span>
                       </div>
                       <CardTitle className="text-base font-bold text-slate-950 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[3rem]">
                         {article.title}
@@ -507,9 +521,20 @@ export default function HomeClient({
                   立即取得課程資訊與最新招生通知。
                 </p>
               </div>
-              <Button size="lg" className="px-12 h-14 text-lg" asChild>
-                <Link href="/courses">立即報名</Link>
-              </Button>
+              {!loading && !user ? (
+                <div className="flex gap-4">
+                  <Button size="lg" variant="outline" className="px-8 h-14 text-lg" asChild>
+                    <Link href="/auth/login">登入</Link>
+                  </Button>
+                  <Button size="lg" className="px-12 h-14 text-lg" asChild>
+                    <Link href="/auth/register">立即加入</Link>
+                  </Button>
+                </div>
+              ) : (
+                <Button size="lg" className="px-12 h-14 text-lg" asChild>
+                  <Link href="/courses">探索課程</Link>
+                </Button>
+              )}
             </div>
           </div>
         </section>

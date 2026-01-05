@@ -10,21 +10,27 @@ import {
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Metadata } from "next";
+import { Navbar } from "@/components/Navbar";
+import { BlogListClient } from "@/components/blog/BlogListClient";
 
 export const metadata: Metadata = {
   title: "AI 實戰文章 | Doris AI學院",
   description: "分享我們在 AI 實戰中的觀察與實踐方法，從 Prompt Engineering 到 Vibe Coding，助您掌握最新 AI 趨勢。",
 };
 
+const ITEMS_PER_PAGE = 6;
+
 const fallbackArticles = [
   {
     title: "如何用 AI 做市場研究？",
     excerpt: "這篇文章將深入探討 3 個高效的提示詞框架，協助你在五分鐘內產出具備商業價值的市場洞察報告與競爭對手分析...",
     category: "實戰教學",
+    categories: ["實戰教學"],
     tags: ["Prompt Engineering", "市場分析"],
     date: "2024-03-20",
     image: "https://images.unsplash.com/photo-1485828333669-bd5ecd0a37b0?w=600&h=400&fit=crop&crop=center",
-    slug: "ai-market-research"
+    slug: "ai-market-research",
+    author: { name: "Doris", avatar_url: null }
   }
 ];
 
@@ -37,9 +43,10 @@ export default async function BlogPage({
 
   let query = supabase
     .from('articles')
-    .select('*')
+    .select('*, author:profiles(name, avatar_url)')
     .neq('status', '草稿')
-    .order('date', { ascending: false });
+    .order('published_at', { ascending: false })
+    .range(0, ITEMS_PER_PAGE - 1);
 
   if (selectedCategory) {
     query = query.contains('categories', [selectedCategory]);
@@ -66,32 +73,12 @@ export default async function BlogPage({
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
-  const articles = (articlesFromDb && articlesFromDb.length > 0) ? articlesFromDb : (selectedCategory ? [] : fallbackArticles);
+  const articles = (articlesFromDb && articlesFromDb.length > 0) ? articlesFromDb : (selectedCategory ? [] : fallbackArticles.map(a => ({ ...a, published_at: a.date })));
   const popularPosts = articles.slice(0, 3);
 
   return (
     <div className="relative bg-white min-h-screen">
-      <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="container-base flex h-16 items-center justify-between">
-          <Link href="/" className="text-lg font-bold tracking-tight text-slate-950">
-            Doris AI學院
-          </Link>
-          <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-            <Link className="transition-colors hover:text-slate-950" href="/courses">熱門課程</Link>
-            <Link className="text-slate-950 font-bold" href="/blog">AI 學習文章</Link>
-            <Link className="transition-colors hover:text-slate-950" href="/tools">AI 工具</Link>
-            <Link className="transition-colors hover:text-slate-950" href="/services/consulting">服務</Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <Link href="/auth/login" className="hidden text-sm font-medium text-slate-600 hover:text-slate-950 sm:block">
-              登入
-            </Link>
-            <Button size="sm" asChild>
-              <Link href="/auth/register">立即加入</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="py-12 sm:py-20">
         <div className="container-base">
@@ -117,59 +104,7 @@ export default async function BlogPage({
 
           <div className="grid lg:grid-cols-[1fr_320px] gap-12 items-start">
             <div className="space-y-10">
-              <div className="grid gap-8 sm:grid-cols-2">
-                {articles.map((article: any) => (
-                  <Card key={article.slug} className="group overflow-hidden border-slate-200 rounded-lg hover:shadow-lg transition-all duration-300 flex flex-col h-full">
-                    <div className="relative aspect-[16/9] overflow-hidden border-b border-slate-100">
-                      <img
-                        src={article.image}
-                        alt={article.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="absolute top-3 left-3 flex flex-wrap gap-1">
-                        {(article.categories && article.categories.length > 0) ? (
-                          article.categories.map((cat: string) => (
-                            <Badge key={cat} className="bg-white/90 backdrop-blur-md text-slate-900 border-slate-200 text-[10px] px-2 py-0.5 rounded-sm font-bold shadow-sm">
-                              {cat}
-                            </Badge>
-                          ))
-                        ) : (
-                          <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-slate-200 text-[10px] px-2 py-0.5 rounded-sm font-bold shadow-sm">
-                            {article.category || "AI 實戰"}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <CardHeader className="p-5 space-y-3">
-                      <div className="text-[10px] font-medium text-slate-400">
-                        {article.date}
-                      </div>
-                      <Link href={`/blog/${article.slug}`}>
-                        <CardTitle className="text-xl font-bold text-slate-950 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2">
-                          {article.title}
-                        </CardTitle>
-                      </Link>
-                      <CardDescription className="text-slate-500 text-sm leading-relaxed line-clamp-3">
-                        {article.excerpt}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="px-5 pb-5 mt-auto">
-                      <div className="flex flex-wrap gap-1.5 mb-4">
-                        {article.tags?.map((tag: string) => (
-                          <span key={tag} className="text-[10px] text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded-sm border border-slate-100">
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                      <Link href={`/blog/${article.slug}`}>
-                        <Button variant="outline" className="w-full h-9 text-xs font-bold rounded-md hover:bg-slate-950 hover:text-white transition-all">
-                          閱讀更多
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <BlogListClient initialArticles={articles} selectedCategory={selectedCategory} />
             </div>
 
             <aside className="space-y-10 sticky top-28">
@@ -236,7 +171,9 @@ export default async function BlogPage({
                         <h4 className="text-xs font-bold text-slate-900 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2">
                           {post.title}
                         </h4>
-                        <span className="text-[10px] text-slate-400">{post.date}</span>
+                        <span className="text-[10px] text-slate-400">
+                          {post.published_at ? new Date(post.published_at).toLocaleDateString() : (post.created_at ? new Date(post.created_at).toLocaleDateString() : "N/A")}
+                        </span>
                       </div>
                     </Link>
                   ))}

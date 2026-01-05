@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const { data: courses } = await supabase.from('courses').select('*').limit(3);
-  const { data: articles } = await supabase.from('articles').select('*').neq('status', '草稿').order('date', { ascending: false }).limit(3);
+  const { data: articles } = await supabase.from('articles').select('*').neq('status', '草稿').order('published_at', { ascending: false }).limit(3);
 
   return <HomeClient initialCourses={courses || []} initialArticles={articles || []} />;
 }
