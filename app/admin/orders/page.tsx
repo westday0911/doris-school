@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Download, Filter, ExternalLink } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatDate } from "@/lib/utils";
+import { OrderActions } from "@/components/admin/OrderActions";
 
 export default async function AdminOrdersPage() {
   // 從 Supabase 獲取訂單列表，並關聯 profiles 取得會員名稱
@@ -72,9 +73,12 @@ export default async function AdminOrdersPage() {
                   {formatDate(order.created_at)}
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <button className="p-2 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50">
-                    <ExternalLink size={18} />
-                  </button>
+                  <div className="flex items-center justify-end gap-2">
+                    <OrderActions orderId={order.id} status={order.status} />
+                    <button className="p-2 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50">
+                      <ExternalLink size={18} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

@@ -24,6 +24,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { supabase } from "@/lib/supabase";
 
 export default function CheckoutPage() {
   const { items, totalAmount } = useCart();
@@ -63,11 +64,15 @@ export default function CheckoutPage() {
     setLoading(true);
     
     try {
+      // 獲取目前登入使用者的 session 以便驗證
+      const { data: { session } } = await supabase.auth.getSession();
+
       // 這裡串接後端 API 建立訂單並取得 PayUni 支付表單資訊
       const response = await fetch("/api/payment/payuni", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": session ? `Bearer ${session.access_token}` : "",
         },
         body: JSON.stringify({
           items,

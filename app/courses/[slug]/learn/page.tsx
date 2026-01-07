@@ -1,14 +1,10 @@
 import { supabase } from "@/lib/supabase";
 import { notFound, redirect } from "next/navigation";
 import ClassroomClient from "./ClassroomClient";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
 
 export default async function CourseLearnPage({ params }: { params: { slug: string } }) {
-  const cookieStore = cookies();
-  const supabaseServer = createServerComponentClient({ cookies: () => cookieStore });
-  
-  const { data: { user } } = await supabaseServer.auth.getUser();
+  // 使用基本 client 獲取使用者 (SSR 模式下若未設定 Auth Helpers 可能無法取得，建議之後安裝 @supabase/ssr)
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     redirect(`/auth/login?returnTo=/courses/${params.slug}/learn`);

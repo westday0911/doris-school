@@ -1,38 +1,89 @@
 import { NextResponse } from "next/server";
 import { PayUni } from "@/lib/payuni";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
   try {
-    const { items, amount, customer, method } = await req.json();
+    const { items, amount, customer } = await req.json();
 
-    // 1. 在資料庫建立訂單 (supabase)
-    // 這裡建議先在 supabase 建立 orders 表並儲存訂單資訊
-    // 目前先模擬一個訂單編號
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error("Missing Supabase Config:", { 
+        url: supabaseUrl ? "Present" : "Missing", 
+        key: serviceRoleKey ? "Present" : "Missing" 
+      });
+      throw new Error("Supabase configuration is missing in environment variables.");
+    }
+
+    // 使用 Service Role Key 建立管理員權限的 Supabase Client
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
+    // 0. 嘗試獲取目前登入使用者 ID (透過 Authorization Header)
+    // 這樣即便使用 admin client 也能知道是哪位使用者在下單
+    const authHeader = req.headers.get("Authorization");
+    let userId = null;
+    
+    if (authHeader) {
+      const token = authHeader.split("Bearer ")[1];
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+      if (user) userId = user.id;
+    }
+
+    // 1. 在資料庫建立訂單 (使用 supabaseAdmin)
     const orderNo = `DORIS${Date.now()}`;
+    const itemsSummary = items.map((i: any) => i.title).join(", ");
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from('orders')
+      .insert([{
+        order_number: orderNo,
+        user_id: userId,
+        items_summary: itemsSummary,
+        total_amount: amount,
+        payment_method: 'PayUni',
+        status: 'pending',
+        customer_name: customer.name,
+        customer_email: customer.email,
+        customer_phone: customer.phone,
+        items_data: items
+      }])
+      .select()
+      .single();
+
+    if (orderError) {
+      console.error("Order creation error (Admin):", orderError);
+      throw new Error("建立訂單失敗：" + orderError.message);
+    }
 
     // 2. 準備 PayUni 訂單資料 (嚴格遵循文件欄位名稱)
     const payuni = new PayUni();
     const orderData = {
       MerTradeNo: orderNo,
       TradeAmt: amount,
-      ProdDesc: items.map((i: any) => i.title).join(", "),
+      ProdDesc: itemsSummary,
       ReturnURL: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?orderNo=${orderNo}`,
       NotifyURL: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/payuni/notify`,
       BackURL: `${process.env.NEXT_PUBLIC_APP_URL}/cart`,
       UsrMail: customer.email,
-      // 開啟所有支付方式供學生在 PayUni 頁面選擇
+      // 開放主要支付方式
       Credit: 1,
-      LinePay: 1,
-      JKoPay: 1,
-      ATM: 1,
-      CVS: 1
+      LinePay: 0,
+      JKoPay: 0,
+      ATM: 0,
+      CVS: 0
     };
 
     // 3. 生成加密參數
     const params = payuni.generatePaymentParams(orderData);
-    console.log("orderData", orderData);
-    console.log("PayUni Request Debug params:", params);
+    
+    console.log("Order Created (Admin) ID:", order.id);
 
     return NextResponse.json({
       success: true,
@@ -48,5 +99,3 @@ export async function POST(req: Request) {
     }, { status: 500 });
   }
 }
-
-
