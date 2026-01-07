@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import MediaLibrary from '@/components/media/MediaLibrary';
 
@@ -296,12 +296,23 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
     }),
   ], [placeholder]);
 
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
   const editor = useEditor({
     extensions,
     content: content,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      const html = editor.getHTML();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        onChange(html);
+      }, 500);
+    },
+    onBlur: ({ editor }) => {
+      const html = editor.getHTML();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      onChange(html);
     },
     editorProps: {
       attributes: {

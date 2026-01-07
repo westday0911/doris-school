@@ -14,6 +14,7 @@ import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/components/providers/auth-provider";
+import { formatDate } from "@/lib/utils";
 
 export default function HomeClient({ 
   initialCourses, 
@@ -377,7 +378,7 @@ export default function HomeClient({
                     </div>
                     <CardHeader className="p-4 space-y-2">
                       <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400">
-                        <span>{article.published_at ? new Date(article.published_at).toLocaleDateString() : (article.created_at ? new Date(article.created_at).toLocaleDateString() : "N/A")}</span>
+                        <span>{formatDate(article.published_at || article.created_at)}</span>
                       </div>
                       <CardTitle className="text-base font-bold text-slate-950 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[3rem]">
                         {article.title}
@@ -516,7 +517,7 @@ export default function HomeClient({
               <div className="space-y-4 text-center md:text-left">
                 <Badge variant="muted">準備開始你的 AI 學習旅程？</Badge>
                 <h2 className="text-3xl font-bold tracking-tight text-slate-950">
-                  加入 Doris AI學院
+                  加入 Doris AI 學院
                 </h2>
                 <p className="text-slate-500 text-lg">
                   立即取得課程資訊與最新招生通知。

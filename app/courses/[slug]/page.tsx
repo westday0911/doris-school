@@ -26,7 +26,7 @@ export async function generateMetadata(
     title: `${course.title} - AI 課程`,
     description: course.description,
     openGraph: {
-      title: `${course.title} | Doris AI學院`,
+      title: `${course.title} | Doris AI 學院`,
       description: course.description,
       url: `https://doris-ai-academy.com/courses/${params.slug}`,
       images: [course.image_url, ...previousImages],
@@ -69,7 +69,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
     description: course.description,
     provider: {
       '@type': 'Organization',
-      name: 'Doris AI學院',
+      name: 'Doris AI 學院',
       sameAs: 'https://doris-ai-academy.com',
     },
     image: course.image_url,

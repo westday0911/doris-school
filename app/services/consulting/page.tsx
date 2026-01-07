@@ -32,7 +32,7 @@ export default function ConsultingServicePage() {
       <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container-base flex h-16 items-center justify-between">
           <Link href="/" className="text-lg font-bold tracking-tight text-slate-950">
-            Doris AI學院
+            Doris AI 學院
           </Link>
           <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
             <Link className="transition-colors hover:text-slate-950" href="/courses">熱門課程</Link>
@@ -432,7 +432,7 @@ export default function ConsultingServicePage() {
       <footer className="border-t border-slate-200 bg-slate-50/50 py-12">
         <div className="container-base flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div className="space-y-2">
-            <div className="text-xl font-bold tracking-tight text-slate-950">Doris AI學院</div>
+            <div className="text-xl font-bold tracking-tight text-slate-950">Doris AI 學院</div>
             <p className="text-sm text-slate-500 font-medium">用 AI 和科技 解決問題</p>
           </div>
           <div className="flex flex-wrap gap-8 text-sm font-medium text-slate-600">

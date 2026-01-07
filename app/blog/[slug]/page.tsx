@@ -13,6 +13,7 @@ import { notFound } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Metadata, ResolvingMetadata } from 'next';
+import { formatDate } from "@/lib/utils";
 
 type Props = {
   params: { slug: string };
@@ -154,7 +155,7 @@ async function BlogPostContent(article: any, slugParam: string) {
     description: article.excerpt,
     publisher: {
       '@type': 'Organization',
-      name: 'Doris AI學院',
+      name: 'Doris AI 學院',
       logo: {
         '@type': 'ImageObject',
         url: 'https://doris-ai-academy.com/logo.png',
@@ -243,7 +244,7 @@ async function BlogPostContent(article: any, slugParam: string) {
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar size={14} />
-                      <span>{article.published_at ? new Date(article.published_at).toLocaleDateString() : (article.created_at ? new Date(article.created_at).toLocaleDateString() : "N/A")}</span>
+                      <span>{formatDate(article.published_at || article.created_at)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock size={14} />
@@ -284,7 +285,7 @@ async function BlogPostContent(article: any, slugParam: string) {
                         {rec.title}
                       </h4>
                       <p className="text-[10px] text-slate-400 font-medium">
-                        {rec.published_at ? new Date(rec.published_at).toLocaleDateString() : (rec.created_at ? new Date(rec.created_at).toLocaleDateString() : "N/A")}
+                        {formatDate(rec.published_at || rec.created_at)}
                       </p>
                     </Link>
                   ))}
@@ -366,7 +367,7 @@ async function BlogPostContent(article: any, slugParam: string) {
                           {post.title}
                         </h4>
                         <span className="text-[10px] text-slate-400">
-                          {post.published_at ? new Date(post.published_at).toLocaleDateString() : (post.created_at ? new Date(post.created_at).toLocaleDateString() : "N/A")}
+                          {formatDate(post.published_at || post.created_at)}
                         </span>
                       </div>
                     </Link>

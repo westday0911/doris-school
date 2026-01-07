@@ -12,11 +12,15 @@ import { supabase } from "@/lib/supabase";
 import { 
   Loader2, MessageSquare, BookOpen, Clock, BarChart, 
   Users, Star, Megaphone, ChevronDown, PlayCircle, 
-  Info, Lock, Download, FileText, Globe, MonitorPlay
+  Info, Lock, Download, FileText, Globe, MonitorPlay,
+  CheckCircle2, ArrowRight
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useCart } from "@/components/providers/cart-provider";
+import { useRouter } from "next/navigation";
+import { formatDate } from "@/lib/utils";
 
 export default function CourseDetailClient({ 
   initialCourse, 
@@ -28,6 +32,8 @@ export default function CourseDetailClient({
   initialModules: any[]
 }) {
   const { user } = useAuth();
+  const { addToCart } = useCart();
+  const router = useRouter();
   const [course, setCourse] = useState<any>(initialCourse);
   const [modules, setModules] = useState<any[]>(initialModules);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -36,6 +42,43 @@ export default function CourseDetailClient({
   const [checkingPurchase, setCheckingPurchase] = useState(true);
   const [openModules, setOpenModules] = useState<string[]>(initialModules.length > 0 ? [initialModules[0].id] : []);
   const [selectedPricingIdx, setSelectedPricingIdx] = useState(0);
+  const [showStickyNav, setShowStickyNav] = useState(false);
+  const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+
+  const handleBuyNow = () => {
+    if (hasPurchased) {
+      alert("您已擁有此課程");
+      return;
+    }
+
+    const currentPricing = pricingOptions[selectedPricingIdx];
+    const item = {
+      id: `${course.id}-${selectedPricingIdx}`,
+      title: course.title,
+      price: currentPricing?.price || course.discount_price || 0,
+      original_price: currentPricing?.original_price || course.original_price || 0,
+      image_url: course.image_url,
+      slug: slug,
+      level: course.level,
+      pricing_label: currentPricing?.label || "標準入學方案"
+    };
+
+    addToCart(item);
+    router.push("/cart");
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 600) {
+        setShowStickyNav(true);
+      } else {
+        setShowStickyNav(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     if (course) {
@@ -215,6 +258,66 @@ export default function CourseDetailClient({
       {course.custom_code?.css && <style dangerouslySetInnerHTML={{ __html: course.custom_code.css }} />}
       <Navbar />
 
+      {/* Sticky Navigation Bar */}
+      <div className={`fixed top-0 left-0 w-full bg-white/90 backdrop-blur-md border-b border-slate-100 z-[100] transition-all duration-300 transform ${showStickyNav ? 'translate-y-0' : '-translate-y-full shadow-none'}`}>
+        <div className="container-base h-16 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <div className="hidden md:block">
+              <span className="text-sm font-black text-slate-900 truncate max-w-[200px] block">{course.title}</span>
+            </div>
+            <nav className="flex items-center gap-6">
+              <button 
+                onClick={() => document.getElementById('details')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors"
+              >
+                課程詳情
+              </button>
+              <button 
+                onClick={() => document.getElementById('syllabus')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors"
+              >
+                課程大綱
+              </button>
+              <button 
+                onClick={() => document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors"
+              >
+                學員評論
+              </button>
+            </nav>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-baseline gap-2 mr-4">
+              <span className="text-lg font-black text-slate-950">
+                NT$ {(pricingOptions[selectedPricingIdx]?.price || course.discount_price || 0).toLocaleString()}
+              </span>
+              {(pricingOptions[selectedPricingIdx]?.original_price || course.original_price) > (pricingOptions[selectedPricingIdx]?.price || course.discount_price) && (
+                <span className="text-xs text-slate-400 line-through font-bold">
+                  NT$ {(pricingOptions[selectedPricingIdx]?.original_price || course.original_price)?.toLocaleString()}
+                </span>
+              )}
+            </div>
+            {hasPurchased ? (
+              <Button 
+                size="sm" 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 rounded-full"
+                asChild
+              >
+                <Link href={`/courses/${slug}/learn`}>進入教室</Link>
+              </Button>
+            ) : (
+              <Button 
+                size="sm" 
+                className="bg-blue-600 hover:bg-blue-700 text-white font-black px-6 rounded-full"
+                onClick={handleBuyNow}
+              >
+                立即購買
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* 新 Hero 區塊：暗底、滿版、佈局重組 */}
       <section className="bg-slate-900 w-full overflow-hidden relative border-b border-white/5 pt-10 pb-12 lg:pt-14 lg:pb-16">
         <div className="absolute top-0 right-0 w-1/4 h-full bg-blue-600/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2" />
@@ -313,21 +416,57 @@ export default function CourseDetailClient({
             )}
 
             {/* 課程介紹 */}
-            <div className="space-y-8">
-              <div className="flex items-center gap-3">
-                <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight">課程詳情</h3>
+            <div id="details" className="space-y-8 scroll-mt-24">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
+                  <h3 className="text-3xl font-black text-slate-900 tracking-tight">課程詳情</h3>
+                </div>
               </div>
-              {course.custom_code?.html ? (
-                <div className="course-custom-intro-html course-detail" dangerouslySetInnerHTML={{ __html: course.custom_code.html }} />
-              ) : (
-                <div className="prose prose-slate max-w-none prose-headings:font-black prose-img:rounded-2xl prose-a:text-blue-600 text-slate-600 text-lg leading-relaxed" dangerouslySetInnerHTML={{ __html: course.content || course.description }} />
-              )}
+              
+              <div className="relative">
+                <div 
+                  className={`overflow-hidden transition-all duration-500 ease-in-out ${!isDetailsExpanded ? 'max-h-[600px]' : 'max-h-none'}`}
+                >
+                  {course.custom_code?.html ? (
+                    <div className="course-custom-intro-html course-detail" dangerouslySetInnerHTML={{ __html: course.custom_code.html }} />
+                  ) : (
+                    <div className="prose prose-slate max-w-none prose-headings:font-black prose-img:rounded-2xl prose-a:text-blue-600 text-slate-600 text-lg leading-relaxed" dangerouslySetInnerHTML={{ __html: course.content || course.description }} />
+                  )}
+                </div>
+                
+                {!isDetailsExpanded && (
+                  <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-white via-white/80 to-transparent z-10 flex items-end justify-center pb-4">
+                    <Button 
+                      variant="outline" 
+                      className="bg-white border-slate-200 shadow-lg gap-2 font-bold rounded-full px-8 hover:bg-slate-50 transition-all transform hover:-translate-y-1"
+                      onClick={() => setIsDetailsExpanded(true)}
+                    >
+                      顯示更多課程詳情 <ChevronDown size={16} />
+                    </Button>
+                  </div>
+                )}
+                
+                {isDetailsExpanded && (
+                  <div className="mt-8 flex justify-center">
+                    <Button 
+                      variant="ghost" 
+                      className="text-slate-400 hover:text-slate-600 font-bold"
+                      onClick={() => {
+                        setIsDetailsExpanded(false);
+                        document.getElementById('details')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                    >
+                      收起詳情
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* 課程大綱 */}
             {modules.length > 0 && (
-              <div className="space-y-8">
+              <div id="syllabus" className="space-y-8 scroll-mt-24">
                 <div className="flex items-end justify-between border-b border-slate-100 pb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
@@ -411,7 +550,7 @@ export default function CourseDetailClient({
             )}
 
             {/* 評價區塊 */}
-            <div className="space-y-8">
+            <div id="reviews" className="space-y-8 scroll-mt-24">
               <div className="flex items-center gap-3">
                 <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight">學員真心心得</h3>
@@ -433,7 +572,7 @@ export default function CourseDetailClient({
                           <div className="w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center text-white font-black text-sm">{(rev.user_name?.[0] || 'U').toUpperCase()}</div>
                           <div>
                             <span className="font-black text-base text-slate-900 block">{rev.user_name}</span>
-                            <span className="text-xs text-slate-400 font-bold">{new Date(rev.created_at).toLocaleDateString()}</span>
+                            <span className="text-xs text-slate-400 font-bold">{formatDate(rev.created_at)}</span>
                           </div>
                         </div>
                         <div className="flex text-yellow-400 gap-0.5 text-xs">{"★".repeat(rev.rating)}</div>
@@ -447,7 +586,7 @@ export default function CourseDetailClient({
           </div>
 
           {/* 側邊欄 - 選擇您的學習方案 */}
-          <aside className="sticky top-28 space-y-8 z-20">
+          <aside id="pricing-section" className="sticky top-28 space-y-8 z-20 scroll-mt-28">
             <div className="space-y-6">
               <h5 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-2">選擇您的學習方案</h5>
               
@@ -489,18 +628,29 @@ export default function CourseDetailClient({
                       <div className="space-y-4">
                         <h6 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">方案包含內容</h6>
                         <ul className="space-y-3">
-                          {[
-                            { icon: <Clock size={16} />, val: course.duration || "終身觀看權限" },
-                            { icon: <FileText size={16} />, val: "完整教材與資源下載" },
-                            { icon: <Users size={16} />, val: "專屬學員討論區" },
-                          ].map((item, i) => (
-                            <li key={i} className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                              <span className="text-emerald-500 bg-emerald-50 p-1 rounded-lg">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                              </span>
-                              {item.val}
-                            </li>
-                          ))}
+                          {opt.features && opt.features.length > 0 ? (
+                            opt.features.map((feature: string, i: number) => (
+                              <li key={i} className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                                <span className="text-emerald-500 bg-emerald-50 p-1 rounded-lg flex-shrink-0">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </span>
+                                <span className="line-clamp-1">{feature}</span>
+                              </li>
+                            ))
+                          ) : (
+                            [
+                              { icon: <Clock size={16} />, val: course.duration || "終身觀看權限" },
+                              { icon: <FileText size={16} />, val: "完整教材與資源下載" },
+                              { icon: <Users size={16} />, val: "專屬學員討論區" },
+                            ].map((item, i) => (
+                              <li key={i} className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                                <span className="text-emerald-500 bg-emerald-50 p-1 rounded-lg flex-shrink-0">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </span>
+                                {item.val}
+                              </li>
+                            ))
+                          )}
                         </ul>
                       </div>
 
@@ -511,8 +661,9 @@ export default function CourseDetailClient({
                             ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-900/20' 
                             : 'bg-slate-950 hover:bg-blue-600 text-white'
                         }`}
+                        onClick={handleBuyNow}
                       >
-                        {hasPurchased ? "您已擁有此課程" : selectedPricingIdx === idx ? "立即贊助此方案" : "選擇此方案"}
+                        {hasPurchased ? "您已擁有此課程" : "立即購買"}
                       </Button>
                     </CardContent>
                   </Card>
@@ -531,8 +682,9 @@ export default function CourseDetailClient({
                         size="lg" 
                         className="w-full h-16 text-lg font-black bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-xl shadow-blue-900/20 disabled:bg-slate-200"
                         disabled={course.status === "已額滿" || course.status === "已下架"}
+                        onClick={handleBuyNow}
                       >
-                        {course.status === "已額滿" ? "名額已滿" : course.status === "預購中" ? "立即預購課程" : "立即加入課程"}
+                        {course.status === "已額滿" ? "名額已滿" : "立即購買"}
                       </Button>
                     </CardContent>
                   </Card>

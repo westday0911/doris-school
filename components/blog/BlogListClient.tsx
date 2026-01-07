@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -117,7 +118,7 @@ export function BlogListClient({
             <CardHeader className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="text-[10px] font-medium text-slate-400">
-                  {article.published_at ? new Date(article.published_at).toLocaleDateString() : (article.created_at ? new Date(article.created_at).toLocaleDateString() : "N/A")}
+                  {formatDate(article.published_at || article.created_at)}
                 </div>
                 {article.author && (
                   <div className="flex items-center gap-1.5">

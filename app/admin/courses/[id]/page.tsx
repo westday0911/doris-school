@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { 
   ChevronLeft, Save, Eye, Clock, Award, 
   DollarSign, Loader2, Image as ImageIcon, Plus, 
   Trash2, ListTree, Code2, Megaphone, GripVertical, PlusCircle,
-  FileText, Link as LinkIcon, Youtube
+  FileText, Link as LinkIcon, Youtube, X
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import TiptapEditor from "@/components/editor/TiptapEditor";
+import { useCallback } from "react";
 
 export default function AdminCourseEditPage({ params }: { params: { id: string } }) {
   const isNew = params.id === "new";
@@ -59,9 +61,6 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
 
   const fetchCourseData = async () => {
     setLoading(true);
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒載入超時
-
     try {
       // 1. 抓取課程主表
       const { data: course, error } = await supabase
@@ -116,14 +115,9 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
         setModules(sortedModules);
       }
     } catch (err: any) {
-      if (err.name === 'AbortError') {
-        console.error("Fetch course data timeout");
-        alert("載入課程資料超時，請檢查網路。");
-      } else {
-        console.error("Unexpected error in fetchCourseData:", err);
-      }
+      console.error("Unexpected error in fetchCourseData:", err);
+      alert("載入課程資料失敗，請檢查網路。");
     } finally {
-      clearTimeout(timeoutId);
       setLoading(false);
     }
   };
@@ -134,19 +128,19 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
       return;
     }
 
+    if (saving) return;
+
     setSaving(true);
     
-    // 增加 AbortController 處理超時
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒儲存超時
-    
-    try {
-      // 0. 檢查 Session 狀態
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("登入已過期，請重新整理頁面並登入。");
+    // 增加一個 20 秒強制結束 Loading 的保護機制
+    const forceResetLoading = setTimeout(() => {
+      if (saving) {
+        setSaving(false);
+        console.warn("Save operation forced timeout after 20s");
       }
+    }, 20000);
 
+    try {
       // 1. 儲存課程主表
       const submitData = {
         ...formData,
@@ -155,31 +149,27 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
 
       let courseId = params.id;
       if (isNew) {
-        // 修正：移除不支援的 .abortSignal()
         const { data, error: insertError } = await supabase
           .from('courses')
           .insert([submitData])
           .select()
           .single();
-        if (insertError) throw new Error("主表儲存失敗：" + insertError.message);
+        if (insertError) throw insertError;
         courseId = data.id;
       } else {
-        // 修正：移除不支援的 .abortSignal()
         const { error: updateError } = await supabase
           .from('courses')
           .update(submitData)
           .eq('id', params.id);
-        if (updateError) throw new Error("主表更新失敗：" + updateError.message);
+        if (updateError) throw updateError;
       }
 
-      // 2. 儲存單元與課堂 (批次處理)
-      // 先刪除所有舊單元 (會透過 Cascade 刪除課堂)
-      // 修正：移除不支援的 .abortSignal()
+      // 2. 儲存單元與課堂
       const { error: deleteError } = await supabase
         .from('course_modules')
         .delete()
         .eq('course_id', courseId);
-      if (deleteError) throw new Error("清理舊資料失敗：" + deleteError.message);
+      if (deleteError) throw deleteError;
       
       if (modules.length > 0) {
         const modulesToInsert = modules.map((m, i) => ({
@@ -188,13 +178,12 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
           order_index: i
         }));
 
-        // 修正：移除不支援的 .abortSignal()
         const { data: newModules, error: mError } = await supabase
           .from('course_modules')
           .insert(modulesToInsert)
           .select();
 
-        if (mError) throw new Error("單元儲存失敗：" + mError.message);
+        if (mError) throw mError;
 
         const lessonsToInsert: any[] = [];
         modules.forEach((m, mIdx) => {
@@ -216,37 +205,33 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
         });
 
         if (lessonsToInsert.length > 0) {
-          // 修正：移除不支援的 .abortSignal()
           const { error: lError } = await supabase
             .from('course_lessons')
             .insert(lessonsToInsert);
-          if (lError) throw new Error("課堂儲存失敗：" + lError.message);
+          if (lError) throw lError;
         }
       }
 
-      clearTimeout(timeoutId);
+      clearTimeout(forceResetLoading);
+      setSaving(false);
       
-      // 成功後延遲一下再顯示 alert，並在 alert 關閉後關掉 saving 狀態
+      // 延遲顯示成功訊息
       setTimeout(() => {
-        alert(isNew ? "課程已建立" : "變更已儲存");
-        setSaving(false); // 放在 alert 之後，確保 alert 關閉後轉圈才消失
+        alert(isNew ? "課程建立成功！" : "變更儲存成功！");
         if (isNew) {
           router.push(`/admin/courses/${courseId}`);
         } else {
           router.refresh();
-          fetchCourseData();
         }
       }, 100);
 
     } catch (err: any) {
-      clearTimeout(timeoutId);
+      clearTimeout(forceResetLoading);
       console.error("Save error:", err);
-      if (err.name === 'AbortError') {
-        alert("儲存超時，請檢查網路連線或嘗試重新整理頁面。");
-      } else {
-        alert(err.message || "發生未知錯誤");
-      }
       setSaving(false);
+      setTimeout(() => {
+        alert("儲存失敗：" + (err.message || "發生未知錯誤，請檢查網路連線或重新整理頁面。"));
+      }, 100);
     }
   };
 
@@ -295,6 +280,49 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
       setFormData({ ...formData, categories: [...formData.categories, newCat] });
       setCategoryInput("");
     }
+  };
+
+  const updatePricingOption = (idx: number, field: string, value: any) => {
+    const updated = [...formData.pricing_options];
+    updated[idx][field] = value;
+    setFormData({ ...formData, pricing_options: updated });
+  };
+
+  const addPricingOption = () => {
+    setFormData({
+      ...formData,
+      pricing_options: [
+        ...formData.pricing_options,
+        { label: "", price: 0, original_price: 0, description: "", features: [] }
+      ]
+    });
+  };
+
+  const removePricingOption = (idx: number) => {
+    setFormData({
+      ...formData,
+      pricing_options: formData.pricing_options.filter((_, i) => i !== idx)
+    });
+  };
+
+  const updatePricingFeature = (pIdx: number, fIdx: number, value: string) => {
+    const updated = [...formData.pricing_options];
+    if (!updated[pIdx].features) updated[pIdx].features = [];
+    updated[pIdx].features[fIdx] = value;
+    setFormData({ ...formData, pricing_options: updated });
+  };
+
+  const addPricingFeature = (pIdx: number) => {
+    const updated = [...formData.pricing_options];
+    if (!updated[pIdx].features) updated[pIdx].features = [];
+    updated[pIdx].features.push("");
+    setFormData({ ...formData, pricing_options: updated });
+  };
+
+  const removePricingFeature = (pIdx: number, fIdx: number) => {
+    const updated = [...formData.pricing_options];
+    updated[pIdx].features = updated[pIdx].features.filter((_: any, i: number) => i !== fIdx);
+    setFormData({ ...formData, pricing_options: updated });
   };
 
   if (loading) {
@@ -410,31 +438,66 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
           <section className="bg-white p-8 rounded-2xl border border-slate-100 space-y-6 shadow-sm">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-slate-900 border-l-4 border-blue-600 pl-4">定價方案 (多重選項)</h3>
-              <Button size="sm" variant="outline" className="gap-2" onClick={() => setFormData({...formData, pricing_options: [...formData.pricing_options, {label: "", price: 0, original_price: 0, description: ""}]})}><Plus size={14} /> 新增方案</Button>
+              <Button size="sm" variant="outline" className="gap-2" onClick={addPricingOption}><Plus size={14} /> 新增方案</Button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-6">
               {(formData.pricing_options || []).map((opt, idx) => (
-                <div key={idx} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 space-y-4">
-                  <div className="flex gap-4">
-                    <input className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm font-bold" placeholder="方案名稱" value={opt.label} onChange={(e) => {
-                      const updated = [...formData.pricing_options];
-                      updated[idx].label = e.target.value;
-                      setFormData({...formData, pricing_options: updated});
-                    }} />
-                    <input type="number" className="w-32 px-3 py-2 rounded-lg border border-slate-200 text-sm" placeholder="原價" value={opt.original_price} onChange={(e) => {
-                      const updated = [...formData.pricing_options];
-                      updated[idx].original_price = parseInt(e.target.value);
-                      setFormData({...formData, pricing_options: updated});
-                    }} />
-                    <input type="number" className="w-32 px-3 py-2 rounded-lg border border-slate-200 text-sm font-bold text-blue-600" placeholder="售價" value={opt.price} onChange={(e) => {
-                      const updated = [...formData.pricing_options];
-                      updated[idx].price = parseInt(e.target.value);
-                      setFormData({...formData, pricing_options: updated});
-                    }} />
-                    <Button size="icon" variant="ghost" className="text-slate-400 hover:text-red-500" onClick={() => setFormData({...formData, pricing_options: formData.pricing_options.filter((_, i) => i !== idx)})}><Trash2 size={16} /></Button>
+                <div key={idx} className="p-6 rounded-xl border border-slate-200 bg-slate-50/30 space-y-6">
+                  <div className="flex gap-4 items-start">
+                    <div className="flex-1 space-y-4">
+                      <div className="grid sm:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-400 uppercase">方案名稱</label>
+                          <input className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-bold" placeholder="例如：進階入學方案" value={opt.label} onChange={(e) => updatePricingOption(idx, 'label', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-400 uppercase">原價</label>
+                          <input type="number" className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" placeholder="原價" value={opt.original_price} onChange={(e) => updatePricingOption(idx, 'original_price', parseInt(e.target.value) || 0)} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-400 uppercase">優惠價</label>
+                          <input type="number" className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-bold text-blue-600" placeholder="售價" value={opt.price} onChange={(e) => updatePricingOption(idx, 'price', parseInt(e.target.value) || 0)} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase">方案描述</label>
+                        <textarea className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm h-20 outline-none resize-none" placeholder="簡單描述此方案的特點..." value={opt.description} onChange={(e) => updatePricingOption(idx, 'description', e.target.value)} />
+                      </div>
+                      
+                      {/* 方案包含內容 (陣列編輯) */}
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold text-slate-400 uppercase flex items-center justify-between">
+                          方案包含內容 (逐行顯示)
+                          <button onClick={() => addPricingFeature(idx)} className="text-blue-600 hover:text-blue-700 flex items-center gap-1 normal-case">
+                            <PlusCircle size={12} /> 新增項目
+                          </button>
+                        </label>
+                        <div className="space-y-2">
+                          {(opt.features || []).map((feature: string, fIdx: number) => (
+                            <div key={fIdx} className="flex gap-2">
+                              <input 
+                                className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs" 
+                                placeholder="項目內容 (例如：專屬 Line 群組)" 
+                                value={feature} 
+                                onChange={(e) => updatePricingFeature(idx, fIdx, e.target.value)}
+                              />
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => removePricingFeature(idx, fIdx)}>
+                                <X size={14} />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <Button size="icon" variant="ghost" className="text-slate-400 hover:text-red-500" onClick={() => removePricingOption(idx)}><Trash2 size={16} /></Button>
                   </div>
                 </div>
               ))}
+              {(!formData.pricing_options || formData.pricing_options.length === 0) && (
+                <div className="text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100 text-slate-400">
+                  尚未設定任何定價方案
+                </div>
+              )}
             </div>
           </section>
 
@@ -490,10 +553,20 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">課程縮圖網址</label>
-              <input className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs outline-none" value={formData.image_url} onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} />
-              <div className="aspect-video bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center border border-slate-100">
-                {formData.image_url ? <img src={formData.image_url} className="w-full h-full object-cover" /> : <ImageIcon className="text-slate-300" size={24} />}
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">課程縮圖</label>
+              <ImageUpload 
+                value={formData.image_url} 
+                onChange={(url) => setFormData({ ...formData, image_url: url })}
+                folder="courses"
+              />
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">或是輸入圖片網址</label>
+                <input 
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs outline-none focus:border-blue-500 transition-colors" 
+                  value={formData.image_url} 
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} 
+                  placeholder="https://..."
+                />
               </div>
             </div>
           </div>

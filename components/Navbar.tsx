@@ -9,16 +9,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, LayoutDashboard } from "lucide-react";
+import { User, LogOut, LayoutDashboard, ShoppingCart } from "lucide-react";
+import { useCart } from "@/components/providers/cart-provider";
 
 export function Navbar() {
   const { user, profile, loading, signOut } = useAuth();
+  const { items } = useCart();
 
   return (
     <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-50">
       <div className="container-base flex h-16 items-center justify-between">
-        <Link href="/" className="text-lg font-bold tracking-tight text-slate-950">
-          Doris AI學院
+        <Link href="/" className="flex items-center gap-2 group">
+          <img src="/logo.png" alt="Doris AI 學院" className="h-8 w-auto" />
+          <span className="text-lg font-black tracking-tight text-slate-950 group-hover:text-blue-600 transition-colors">
+            Doris AI 學院
+          </span>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
           <Link className="transition-colors hover:text-slate-950" href="/courses">
@@ -35,6 +40,14 @@ export function Navbar() {
           </Link>
         </nav>
         <div className="flex items-center gap-4">
+          <Link href="/cart" className="relative p-2 text-slate-400 hover:text-slate-950 transition-colors">
+            <ShoppingCart size={20} />
+            {items.length > 0 && (
+              <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-blue-600 text-[10px] font-black text-white flex items-center justify-center border-2 border-white">
+                {items.length}
+              </span>
+            )}
+          </Link>
           {!loading && (
             <>
               {user ? (

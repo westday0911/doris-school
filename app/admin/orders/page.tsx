@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Search, Download, Filter, ExternalLink } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { formatDate } from "@/lib/utils";
 
 export default async function AdminOrdersPage() {
   // 從 Supabase 獲取訂單列表，並關聯 profiles 取得會員名稱
@@ -68,7 +69,7 @@ export default async function AdminOrdersPage() {
                   </Badge>
                 </td>
                 <td className="px-6 py-4 text-sm text-slate-500 font-medium whitespace-nowrap">
-                  {new Date(order.created_at).toLocaleDateString()}
+                  {formatDate(order.created_at)}
                 </td>
                 <td className="px-6 py-4 text-right">
                   <button className="p-2 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50">

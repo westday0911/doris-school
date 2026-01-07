@@ -13,6 +13,7 @@ import { notFound } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Metadata, ResolvingMetadata } from 'next';
+import { formatDate } from "@/lib/utils";
 
 type Props = {
   params: { slug: string };
@@ -38,7 +39,7 @@ export async function generateMetadata(
     title: `${tool.title} - AI 工具`,
     description: tool.description,
     openGraph: {
-      title: `${tool.title} | Doris AI學院`,
+      title: `${tool.title} | Doris AI 學院`,
       description: tool.description,
       url: `https://doris-ai-academy.com/tools/${params.slug}`,
       images: [tool.image_url, ...previousImages],
@@ -77,7 +78,7 @@ export default async function ToolDetailPage({ params }: { params: { slug: strin
     image: images,
     brand: {
       '@type': 'Brand',
-      name: 'Doris AI學院',
+      name: 'Doris AI 學院',
     },
     offers: {
       '@type': 'Offer',
@@ -247,7 +248,7 @@ export default async function ToolDetailPage({ params }: { params: { slug: strin
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>最後更新</span>
-                      <span className="font-bold text-slate-950">{new Date(tool.created_at).toLocaleDateString()}</span>
+                      <span className="font-bold text-slate-950">{formatDate(tool.created_at)}</span>
                     </div>
                   </div>
 

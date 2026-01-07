@@ -13,9 +13,10 @@ import { Metadata } from "next";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { BlogListClient } from "@/components/blog/BlogListClient";
+import { formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "AI 實戰文章 | Doris AI學院",
+  title: "AI 實戰文章 | Doris AI 學院",
   description: "分享我們在 AI 實戰中的觀察與實踐方法，從 Prompt Engineering 到 Vibe Coding，助您掌握最新 AI 趨勢。",
 };
 
@@ -173,7 +174,7 @@ export default async function BlogPage({
                           {post.title}
                         </h4>
                         <span className="text-[10px] text-slate-400">
-                          {post.published_at ? new Date(post.published_at).toLocaleDateString() : (post.created_at ? new Date(post.created_at).toLocaleDateString() : "N/A")}
+                          {formatDate(post.published_at || post.created_at)}
                         </span>
                       </div>
                     </Link>

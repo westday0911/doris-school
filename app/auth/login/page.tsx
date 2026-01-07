@@ -63,7 +63,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link href="/" className="flex justify-center mb-6">
-          <span className="text-2xl font-black tracking-tight text-slate-950">Doris AI學院</span>
+          <span className="text-2xl font-black tracking-tight text-slate-950">Doris AI 學院</span>
         </Link>
       </div>
 

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit2, Trash2, ExternalLink, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { formatDate } from "@/lib/utils";
 
 export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<any[]>([]);
@@ -116,7 +117,7 @@ export default function AdminArticlesPage() {
                     </Badge>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500 font-medium text-right whitespace-nowrap">
-                    {article.published_at ? new Date(article.published_at).toLocaleDateString() : (article.created_at ? new Date(article.created_at).toLocaleDateString() : "N/A")}
+                    {formatDate(article.published_at || article.created_at)}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500 text-right font-mono">
                     {(article.views || 0).toLocaleString()}

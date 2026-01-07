@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, CheckCircle2, XCircle, Trash2, User, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { formatDate } from "@/lib/utils";
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -138,7 +139,7 @@ export default function AdminReviewsPage() {
                     </Badge>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500 font-medium">
-                    {review.created_at ? new Date(review.created_at).toLocaleDateString() : 'N/A'}
+                    {formatDate(review.created_at)}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">

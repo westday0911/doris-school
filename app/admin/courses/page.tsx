@@ -100,7 +100,24 @@ export default function AdminCoursesPage() {
                     <Users size={14} />
                     <span>{course.student_count || 0} 位學生</span>
                   </div>
-                  <div className="font-bold text-slate-900">NT$ {(course.discount_price || course.price || 0).toLocaleString()}</div>
+                  <div className="font-bold text-slate-900">
+                    {course.pricing_options && course.pricing_options.length > 0 ? (
+                      (() => {
+                        const lowestOption = [...course.pricing_options].sort((a, b) => (a.price || 0) - (b.price || 0))[0];
+                        return (
+                          <span className="flex items-center gap-2">
+                            <span className="text-blue-600">NT$ {lowestOption.price?.toLocaleString()}</span>
+                            {lowestOption.original_price > lowestOption.price && (
+                              <span className="text-slate-400 line-through text-xs font-normal">NT$ {lowestOption.original_price?.toLocaleString()}</span>
+                            )}
+                            <span className="text-[10px] bg-blue-50 px-1.5 py-0.5 rounded text-blue-600 font-bold italic">最便宜方案</span>
+                          </span>
+                        );
+                      })()
+                    ) : (
+                      <span>NT$ {(course.discount_price || course.original_price || 0).toLocaleString()}</span>
+                    )}
+                  </div>
                 </div>
               </div>
 

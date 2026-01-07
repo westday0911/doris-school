@@ -15,6 +15,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/Navbar";
 import { useAuth } from "@/components/providers/auth-provider";
+import { formatDate } from "@/lib/utils";
 
 type DashboardSection = "courses" | "orders" | "profile";
 
@@ -374,7 +375,7 @@ export default function MemberDashboard() {
                                 </p>
                                 <p className="font-bold text-slate-950">{order.items_summary || '課程購買'}</p>
                                 <p className="text-xs text-slate-500 font-medium">
-                                  購買日期: {new Date(order.created_at).toLocaleDateString()}
+                                  購買日期: {formatDate(order.created_at)}
                                 </p>
                               </div>
                               <div className="flex items-center justify-between sm:text-right gap-8">

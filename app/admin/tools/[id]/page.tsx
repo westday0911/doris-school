@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ImageUpload } from "@/components/ui/image-upload";
 import {
   Card,
   CardContent,
@@ -83,28 +84,38 @@ export default function AdminToolEditPage({ params }: { params: { id: string } }
 
     setSaving(true);
     
-    let error;
-    if (isNew) {
-      const { error: insertError } = await supabase
-        .from('tools')
-        .insert([formData]);
-      error = insertError;
-    } else {
-      const { error: updateError } = await supabase
-        .from('tools')
-        .update(formData)
-        .eq('id', params.id);
-      error = updateError;
-    }
+    try {
+      // 驗證登入狀態 (使用 getUser 確保 Session 有效)
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error("登入已過期，請重新整理頁面並登入。");
+      }
 
-    if (error) {
-      alert("儲存失敗：" + error.message);
-    } else {
+      let error;
+      if (isNew) {
+        const { error: insertError } = await supabase
+          .from('tools')
+          .insert([formData]);
+        error = insertError;
+      } else {
+        const { error: updateError } = await supabase
+          .from('tools')
+          .update(formData)
+          .eq('id', params.id);
+        error = updateError;
+      }
+
+      if (error) throw error;
+
       alert(isNew ? "工具已建立" : "變更已儲存");
       router.push("/admin/tools");
       router.refresh();
+    } catch (err: any) {
+      console.error("Save error:", err);
+      alert("儲存失敗：" + (err.message || "未知錯誤"));
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const addFeature = () => {
@@ -345,21 +356,19 @@ export default function AdminToolEditPage({ params }: { params: { id: string } }
 
           <Card className="p-6 space-y-4">
             <label className="text-xs font-bold text-slate-500 uppercase block mb-2">主圖 (Thumbnail)</label>
-            <input 
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs outline-none font-mono mb-2" 
-              placeholder="https://..."
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+            <ImageUpload 
+              value={formData.image_url} 
+              onChange={(url) => setFormData({ ...formData, image_url: url })}
+              folder="tools"
             />
-            <div className="aspect-video bg-slate-50 rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center">
-              {formData.image_url ? (
-                <img src={formData.image_url} alt="Thumbnail Preview" className="w-full h-full object-cover" />
-              ) : (
-                <div className="text-slate-300 flex flex-col items-center gap-1">
-                  <ImageIcon size={20} />
-                  <span className="text-[10px]">預覽主圖</span>
-                </div>
-              )}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase">或是輸入圖片網址</label>
+              <input 
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs outline-none font-mono focus:border-blue-500 transition-colors" 
+                placeholder="https://..."
+                value={formData.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+              />
             </div>
           </Card>
         </aside>

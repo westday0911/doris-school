@@ -4,7 +4,7 @@ import { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "AI 工具庫 | Doris AI學院",
+    title: "AI 工具庫 | Doris AI 學院",
     description: "我們開發了一系列 AI Agent、小工具與網頁模板，協助你將 AI 思維落實到日常工作中，提升開發與辦公效率。",
   };
 }

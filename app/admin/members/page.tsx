@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Search, MoreHorizontal, Loader2, User, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { formatDate } from "@/lib/utils";
 
 export default function AdminMembersPage() {
   const [members, setMembers] = useState<any[]>([]);
@@ -111,7 +112,7 @@ export default function AdminMembersPage() {
                     <Badge variant="muted" className="font-bold text-[10px]">{member.role || '會員'}</Badge>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500 font-medium">
-                    {member.created_at ? new Date(member.created_at).toLocaleDateString() : 'N/A'}
+                    {formatDate(member.created_at)}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5">
