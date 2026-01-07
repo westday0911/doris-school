@@ -2,13 +2,12 @@ import crypto from "crypto";
 
 export interface PayUniOrder {
   MerTradeNo: string;
-  TradeAmt: number;      // 修正：OrderAmt -> TradeAmt
-  ProdDesc: string;      // 修正：TradeDesc -> ProdDesc
+  TradeAmt: number;
+  ProdDesc: string;
   ReturnURL?: string;
   NotifyURL?: string;
-  BackURL?: string;      // 新增：返回商店按鈕網址
-  UsrMail?: string;      // 修正：Email -> UsrMail
-  // 支付工具開關 (1=啟用)
+  BackURL?: string;
+  UsrMail?: string;
   Credit?: number;
   LinePay?: number;
   JKoPay?: number;
@@ -26,13 +25,10 @@ export class PayUni {
     this.merId = process.env.PAYUNI_MERCHANT_ID || "";
     this.hashKey = process.env.PAYUNI_HASH_KEY || "";
     this.hashIv = process.env.PAYUNI_HASH_IV || "";
-    let url = process.env.PAYUNI_API_URL || "https://sandbox-api.payuni.com.tw/api/upp";
-    
-    
-    this.apiUrl = url;
+    this.apiUrl = process.env.PAYUNI_API_URL || "";
   }
 
-  // AES-256-GCM 加密 (符合官方範例)
+  // 完全依照您提供的官方範例實作 encrypt
   encrypt(plaintext: string): string {
     const key = this.hashKey;
     const iv = new Uint8Array(Buffer.from(this.hashIv));
@@ -45,22 +41,7 @@ export class PayUni {
     return Buffer.from(`${cipherText}:::${tag}`).toString("hex").trim();
   }
 
-  // AES-256-GCM 解密 (符合官方範例)
-  decrypt(encryptStr: string): string {
-    const key = this.hashKey;
-    const iv = new Uint8Array(Buffer.from(this.hashIv));
-    const [encryptData, tag] = Buffer.from(encryptStr, "hex").toString().split(":::");
-
-    const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
-    decipher.setAuthTag(new Uint8Array(Buffer.from(tag, "base64")));
-
-    let decipherText = decipher.update(encryptData, "base64", "utf8");
-    decipherText += decipher.final("utf8");
-
-    return decipherText;
-  }
-
-  // SHA256 雜湊 (符合官方範例)
+  // 完全依照您提供的官方範例實作 sha256
   sha256(encryptStr: string): string {
     const key = this.hashKey;
     const iv = this.hashIv;
@@ -69,13 +50,23 @@ export class PayUni {
   }
 
   generatePaymentParams(order: PayUniOrder) {
-    const encryptData = {
+    const encryptData: any = {
       MerID: this.merId,
       ...order,
       Timestamp: Math.floor(Date.now() / 1000),
     };
 
-    const encryptInfo = this.encrypt(JSON.stringify(encryptData));
+    // 關鍵修正：將參數物件轉換為經過排序的 URL Query String
+    const sortedKeys = Object.keys(encryptData).sort();
+    const urlParams = new URLSearchParams();
+    sortedKeys.forEach(key => {
+      if (encryptData[key] !== undefined && encryptData[key] !== null) {
+        urlParams.append(key, encryptData[key].toString());
+      }
+    });
+    
+    // 加密的是 Query String 而不是 JSON
+    const encryptInfo = this.encrypt(urlParams.toString());
     const hashInfo = this.sha256(encryptInfo);
 
     return {

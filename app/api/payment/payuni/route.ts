@@ -11,24 +11,28 @@ export async function POST(req: Request) {
     // 目前先模擬一個訂單編號
     const orderNo = `DORIS${Date.now()}`;
 
-    // 2. 準備 PayUni 訂單資料 (符合文件規範)
+    // 2. 準備 PayUni 訂單資料 (嚴格遵循文件欄位名稱)
     const payuni = new PayUni();
     const orderData = {
       MerTradeNo: orderNo,
-      TradeAmt: amount,             // 修正: TradeAmt
-      ProdDesc: items.map((i: any) => i.title).join(", "), // 修正: ProdDesc
+      TradeAmt: amount,
+      ProdDesc: items.map((i: any) => i.title).join(", "),
       ReturnURL: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?orderNo=${orderNo}`,
-      NotifyURL: `${process.env.NEXT_PUBLIC_api_URL || process.env.NEXT_PUBLIC_APP_URL}/api/payment/payuni/notify`,
+      NotifyURL: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/payuni/notify`,
       BackURL: `${process.env.NEXT_PUBLIC_APP_URL}/cart`,
-      UsrMail: customer.email,      // 修正: UsrMail
-      // 根據前端選擇開啟支付工具
-      Credit: method === 'credit' ? 1 : 1, // 預設開啟信用卡
-      LinePay: method === 'wallets' ? 1 : 0,
-      ATM: method === 'transfer' ? 1 : 0,
+      UsrMail: customer.email,
+      // 開啟所有支付方式供學生在 PayUni 頁面選擇
+      Credit: 1,
+      LinePay: 1,
+      JKoPay: 1,
+      ATM: 1,
+      CVS: 1
     };
 
     // 3. 生成加密參數
     const params = payuni.generatePaymentParams(orderData);
+    console.log("orderData", orderData);
+    console.log("PayUni Request Debug params:", params);
 
     return NextResponse.json({
       success: true,
