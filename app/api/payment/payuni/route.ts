@@ -59,11 +59,18 @@ export async function POST(req: Request) {
 
     if (orderError) {
       console.error("Order creation error (Admin):", orderError);
-      throw new Error("建立訂單失敗：" + orderError.message);
+      return NextResponse.json({ success: false, message: `資料庫錯誤: ${orderError.message}` }, { status: 500 });
     }
 
     // 2. 準備 PayUni 訂單資料 (嚴格遵循文件欄位名稱)
     const payuni = new PayUni();
+    const paymentUrl = payuni.getPaymentUrl();
+
+    if (!paymentUrl) {
+      console.error("PayUni Config Error: PAYUNI_API_URL is missing");
+      return NextResponse.json({ success: false, message: "後端金流網址尚未設定" }, { status: 500 });
+    }
+
     const orderData = {
       MerTradeNo: orderNo,
       TradeAmt: amount,
@@ -83,11 +90,11 @@ export async function POST(req: Request) {
     // 3. 生成加密參數
     const params = payuni.generatePaymentParams(orderData);
     
-    console.log("Order Created (Admin) ID:", order.id);
+    console.log("Order successfully created and params generated:", orderNo);
 
     return NextResponse.json({
       success: true,
-      paymentUrl: payuni.getPaymentUrl(),
+      paymentUrl: paymentUrl,
       params: params
     });
 

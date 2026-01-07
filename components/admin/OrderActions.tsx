@@ -6,7 +6,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
-export function OrderActions({ orderId, status }: { orderId: string, status: string }) {
+export function OrderActions({ orderId, status, onUpdate }: { orderId: string, status: string, onUpdate?: () => void }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -23,6 +23,7 @@ export function OrderActions({ orderId, status }: { orderId: string, status: str
       if (error) throw error;
       
       alert("訂單狀態已更新為已付款！");
+      if (onUpdate) onUpdate();
       router.refresh();
     } catch (err: any) {
       console.error("Update error:", err);

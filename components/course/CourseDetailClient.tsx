@@ -694,7 +694,7 @@ export default function CourseDetailClient({
               <div className="flex flex-col items-center gap-2 py-4">
                 <p className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em] flex items-center gap-3">
                   <span className="w-12 h-px bg-slate-100" />
-                  30天安心退款保證
+                  7 天安心退款保證
                   <span className="w-12 h-px bg-slate-100" />
                 </p>
               </div>

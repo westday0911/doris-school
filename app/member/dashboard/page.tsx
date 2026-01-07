@@ -10,8 +10,9 @@ import {
   CardTitle,
   CardContent,
 } from "@/components/ui/card";
-import { BookOpen, CreditCard, User, LogOut, Loader2, ChevronRight, Settings, Camera, CheckCircle2 } from "lucide-react";
+import { BookOpen, CreditCard, User, LogOut, Loader2, ChevronRight, Settings, Camera, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/Navbar";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -20,11 +21,21 @@ import { formatDate } from "@/lib/utils";
 type DashboardSection = "courses" | "orders" | "profile";
 
 export default function MemberDashboard() {
-  const { user, profile, loading: authLoading, signOut, refreshProfile } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState<DashboardSection>("courses");
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/auth/login");
+    }
+  }, [user, authLoading, router]);
+
   const [orders, setOrders] = useState<any[]>([]);
   const [userCourses, setUserCourses] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Profile Form State
   const [isSaving, setIsSaving] = useState(false);
@@ -38,8 +49,19 @@ export default function MemberDashboard() {
   useEffect(() => {
     if (user) {
       fetchDashboardData();
+      fetchProfile();
     }
   }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (data) setProfile(data);
+  };
 
   useEffect(() => {
     if (profile) {
@@ -51,30 +73,56 @@ export default function MemberDashboard() {
   }, [profile]);
 
   const fetchDashboardData = async () => {
+    if (!user) {
+      console.log("fetchDashboardData: No user, skipping");
+      return;
+    }
     setLoadingData(true);
+    setFetchError(null);
     
-    // 獲取訂單紀錄
-    const ordersPromise = supabase
-      .from('orders')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false });
+    console.log("Fetching dashboard data for user:", user.id);
 
-    // 獲取已購買課程 (關聯 courses 表)
-    const coursesPromise = supabase
-      .from('user_courses')
-      .select(`
-        *,
-        courses (*)
-      `)
-      .eq('user_id', user?.id);
+    try {
+      // 並行執行請求以提高速度
+      const [ordersRes, coursesRes] = await Promise.all([
+        supabase
+          .from('orders')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('user_courses')
+          .select(`
+            *,
+            courses (*)
+          `)
+          .eq('user_id', user.id)
+      ]);
 
-    const [ordersRes, coursesRes] = await Promise.all([ordersPromise, coursesPromise]);
-    
-    if (!ordersRes.error) setOrders(ordersRes.data || []);
-    if (!coursesRes.error) setUserCourses(coursesRes.data || []);
-    
-    setLoadingData(false);
+      if (ordersRes.error) {
+        console.error("Orders fetch error:", ordersRes.error);
+        if (ordersRes.error.code === '42501') {
+          setFetchError("訂單讀取權限不足 (RLS Error)");
+        }
+      }
+
+      if (coursesRes.error) {
+        console.error("Courses fetch error:", coursesRes.error);
+      }
+      
+      console.log("Dashboard data fetched:", {
+        ordersCount: ordersRes.data?.length || 0,
+        coursesCount: coursesRes.data?.length || 0
+      });
+
+      setOrders(ordersRes.data || []);
+      setUserCourses(coursesRes.data || []);
+    } catch (err: any) {
+      console.error("Dashboard fetch unexpected error:", err);
+      setFetchError(err.message);
+    } finally {
+      setLoadingData(false);
+    }
   };
 
   const handleUpdateProfile = async () => {
@@ -93,7 +141,7 @@ export default function MemberDashboard() {
       alert("儲存失敗：" + error.message);
     } else {
       alert("個人資料已更新！");
-      if (refreshProfile) await refreshProfile();
+      await fetchProfile();
     }
     setIsSaving(false);
   };
@@ -134,7 +182,6 @@ export default function MemberDashboard() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // 檢查文件類型
     if (!file.type.startsWith('image/')) {
       alert("請選擇圖片檔案");
       return;
@@ -142,11 +189,7 @@ export default function MemberDashboard() {
 
     setIsUploading(true);
     try {
-      // 1. 壓縮圖片 (最大寬度 500px)
       const compressedBlob = await compressImage(file, 500);
-      
-      // 2. 上傳到 Supabase Storage
-      // 確保 bucket 'avatars' 已存在且為公開
       const fileExt = 'jpg';
       const filePath = `${user.id}/${Date.now()}.${fileExt}`;
 
@@ -159,12 +202,10 @@ export default function MemberDashboard() {
 
       if (uploadError) throw uploadError;
 
-      // 3. 獲取公開 URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
-      // 4. 更新 Profile
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
@@ -172,7 +213,7 @@ export default function MemberDashboard() {
 
       if (updateError) throw updateError;
 
-      if (refreshProfile) await refreshProfile();
+      await fetchProfile();
       alert("大頭照更新成功！");
     } catch (error: any) {
       console.error("Upload error:", error);
@@ -206,13 +247,20 @@ export default function MemberDashboard() {
 
       <main className="py-12">
         <div className="container-base">
+          {fetchError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 text-sm font-bold animate-in fade-in slide-in-from-top-2">
+              <AlertCircle size={18} />
+              <span>系統提示：{fetchError}。請檢查 Supabase RLS 設定或重新整理頁面。</span>
+            </div>
+          )}
+
           <div className="grid lg:grid-cols-[280px_1fr] gap-8 items-start">
             {/* Sidebar */}
             <aside className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm sticky top-24">
               <div className="flex flex-col items-center text-center pb-8 border-b border-slate-100 mb-6">
                 <div className="h-20 w-20 rounded-full bg-slate-900 flex items-center justify-center text-white text-2xl font-bold border-4 border-white shadow-xl overflow-hidden mb-4 relative group">
                   {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} className="w-full h-full object-cover" />
+                    <img src={profile.avatar_url} className="w-full h-full object-cover" alt="avatar" />
                   ) : (
                     profile?.name?.[0]?.toUpperCase() || user.email?.[0].toUpperCase()
                   )}
@@ -413,7 +461,7 @@ export default function MemberDashboard() {
                         <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                           <div className="h-24 w-24 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 text-2xl font-bold border-4 border-white shadow-lg overflow-hidden relative">
                             {profile?.avatar_url ? (
-                              <img src={profile.avatar_url} className="w-full h-full object-cover" />
+                              <img src={profile.avatar_url} className="w-full h-full object-cover" alt="avatar" />
                             ) : (
                               profile?.name?.[0]?.toUpperCase() || user.email?.[0].toUpperCase()
                             )}

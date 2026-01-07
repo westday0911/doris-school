@@ -62,12 +62,24 @@ export default function CheckoutPage() {
     }
 
     setLoading(true);
+    console.log("Starting checkout process...");
     
     try {
-      // 獲取目前登入使用者的 session 以便驗證
-      const { data: { session } } = await supabase.auth.getSession();
+      // 獲取目前登入使用者的 session
+      let session = null;
+      try {
+        const { data } = await supabase.auth.getSession();
+        session = data.session;
+        console.log("Session status:", session ? "Logged in" : "Guest");
+      } catch (sErr) {
+        console.warn("Failed to get session:", sErr);
+      }
 
-      // 這裡串接後端 API 建立訂單並取得 PayUni 支付表單資訊
+      // 設定一個 15 秒的請求超時
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      console.log("Calling PayUni API...");
       const response = await fetch("/api/payment/payuni", {
         method: "POST",
         headers: {
@@ -79,17 +91,31 @@ export default function CheckoutPage() {
           amount: totalAmount,
           customer: formData
         }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error Response:", errorText);
+        throw new Error(`伺服器回應錯誤 (${response.status})`);
+      }
+
       const data = await response.json();
+      console.log("PayUni API Response:", data);
 
       if (data.success) {
+        if (!data.paymentUrl) {
+          throw new Error("金流網址無效，請檢查後端設定");
+        }
+        
+        console.log("Redirecting to PayUni...");
         // 建立一個隱藏表單並提交到 PayUni
         const form = document.createElement("form");
         form.method = "POST";
         form.action = data.paymentUrl;
 
-        // 將 PayUni 需要的所有加密參數加入
         Object.entries(data.params).forEach(([key, value]) => {
           const input = document.createElement("input");
           input.type = "hidden";
@@ -104,8 +130,9 @@ export default function CheckoutPage() {
         throw new Error(data.message || "建立支付訂單失敗");
       }
     } catch (error: any) {
-      console.error("Checkout error:", error);
-      alert("結帳過程發生錯誤：" + error.message);
+      console.error("Checkout detail error:", error);
+      const msg = error.name === 'AbortError' ? "連線逾時，請檢查網路環境或稍後再試" : error.message;
+      alert("結帳過程發生錯誤：" + msg);
       setLoading(false);
     }
   };
@@ -157,7 +184,7 @@ export default function CheckoutPage() {
                       <label className="text-sm font-bold text-slate-700">手機號碼</label>
                       <input 
                         className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium" 
-                        placeholder="0912-345-678"
+                        placeholder="0912345678"
                         value={formData.phone}
                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
                       />

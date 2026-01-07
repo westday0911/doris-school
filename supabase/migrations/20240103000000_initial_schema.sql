@@ -128,7 +128,11 @@ BEGIN
   INSERT INTO public.profiles (id, name, email, avatar_url)
   VALUES (
     new.id, 
-    COALESCE(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)), 
+    COALESCE(
+      new.raw_user_meta_data->>'name', 
+      new.raw_user_meta_data->>'full_name', 
+      split_part(new.email, '@', 1)
+    ), 
     new.email, 
     new.raw_user_meta_data->>'avatar_url'
   );

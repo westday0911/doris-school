@@ -1,20 +1,45 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Filter, ExternalLink } from "lucide-react";
+import { Search, Download, Filter, ExternalLink, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatDate } from "@/lib/utils";
 import { OrderActions } from "@/components/admin/OrderActions";
 
-export default async function AdminOrdersPage() {
-  // 從 Supabase 獲取訂單列表，並關聯 profiles 取得會員名稱
-  const { data: orders, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      profiles:user_id (name)
-    `)
-    .order('created_at', { ascending: false });
+export default function AdminOrdersPage() {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const displayOrders = orders || [];
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    setLoading(true);
+    // 從 Supabase 獲取訂單列表，並關聯 profiles 取得會員名稱
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        profiles:user_id (name)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error fetching orders:", error);
+    } else {
+      setOrders(data || []);
+    }
+    setLoading(false);
+  };
+
+  const filteredOrders = orders.filter(order => 
+    order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.customer_email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -24,7 +49,9 @@ export default async function AdminOrdersPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500/20" 
-              placeholder="搜尋訂單編號..."
+              placeholder="搜尋訂單編號、姓名、Email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
@@ -49,46 +76,59 @@ export default async function AdminOrdersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {displayOrders.map((order: any) => (
-              <tr key={order.id} className="hover:bg-slate-50/30 transition-colors">
-                <td className="px-6 py-4 text-sm font-mono font-bold text-slate-900">{order.order_number || order.id.substring(0, 12)}</td>
-                <td className="px-6 py-4">
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-bold text-slate-800">{order.profiles?.name || '未知會員'}</p>
-                    <p className="text-[11px] text-slate-400 line-clamp-1">{order.items_summary || '多項課程'}</p>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-bold text-slate-800">NT$ {order.total_amount?.toLocaleString()}</p>
-                    <p className="text-[11px] text-slate-400">{order.payment_method}</p>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <Badge className={order.status === "paid" ? "bg-emerald-50 text-emerald-700 border-0" : "bg-amber-50 text-amber-700 border-0"}>
-                    {order.status === "paid" ? "付款成功" : "等待付款"}
-                  </Badge>
-                </td>
-                <td className="px-6 py-4 text-sm text-slate-500 font-medium whitespace-nowrap">
-                  {formatDate(order.created_at)}
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <OrderActions orderId={order.id} status={order.status} />
-                    <button className="p-2 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50">
-                      <ExternalLink size={18} />
-                    </button>
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-20 text-center">
+                  <div className="flex flex-col items-center gap-2 text-slate-400">
+                    <Loader2 className="animate-spin" />
+                    <span>載入中...</span>
                   </div>
                 </td>
               </tr>
-            ))}
+            ) : filteredOrders.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-20 text-center text-slate-400">
+                  目前尚無訂單資料。
+                </td>
+              </tr>
+            ) : (
+              filteredOrders.map((order: any) => (
+                <tr key={order.id} className="hover:bg-slate-50/30 transition-colors">
+                  <td className="px-6 py-4 text-sm font-mono font-bold text-slate-900">{order.order_number || order.id.substring(0, 12)}</td>
+                  <td className="px-6 py-4">
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-bold text-slate-800">{order.profiles?.name || order.customer_name || '未知會員'}</p>
+                      <p className="text-[11px] text-slate-400">{order.customer_email}</p>
+                      <p className="text-[11px] text-slate-400 line-clamp-1 mt-1 font-medium">{order.items_summary || '多項課程'}</p>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-bold text-slate-800">NT$ {order.total_amount?.toLocaleString()}</p>
+                      <p className="text-[11px] text-slate-400">{order.payment_method}</p>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge className={order.status === "paid" ? "bg-emerald-50 text-emerald-700 border-0" : "bg-amber-50 text-amber-700 border-0"}>
+                      {order.status === "paid" ? "付款成功" : "等待付款"}
+                    </Badge>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-500 font-medium whitespace-nowrap">
+                    {formatDate(order.created_at)}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <OrderActions orderId={order.id} status={order.status} onUpdate={fetchOrders} />
+                      <button className="p-2 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50">
+                        <ExternalLink size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
-        {displayOrders.length === 0 && (
-          <div className="text-center py-20 bg-white">
-            <p className="text-slate-400">目前尚無訂單資料。</p>
-          </div>
-        )}
       </div>
     </div>
   );

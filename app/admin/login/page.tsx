@@ -17,7 +17,16 @@ import { useAuth } from "@/components/providers/auth-provider";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (user) {
+      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+        .then(({ data }) => setProfile(data));
+    }
+  }, [user]);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);

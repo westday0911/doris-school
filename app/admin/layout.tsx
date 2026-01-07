@@ -36,8 +36,16 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
   const [isAuthorizing, setIsAuthorizing] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+        .then(({ data }) => setProfile(data));
+    }
+  }, [user]);
 
   // 登入頁不需要 layout 且不需要授權檢查
   const isLoginPage = pathname === "/admin/login";
