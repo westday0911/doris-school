@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { BookOpen, CreditCard, User, LogOut, Loader2, ChevronRight, Settings, Camera, AlertCircle, ArrowUpDown } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/Navbar";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -23,7 +23,15 @@ type DashboardSection = "courses" | "orders" | "profile";
 export default function MemberDashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeSection, setActiveSection] = useState<DashboardSection>("courses");
+
+  useEffect(() => {
+    const section = searchParams.get("section") as DashboardSection;
+    if (section && ["courses", "orders", "profile"].includes(section)) {
+      setActiveSection(section);
+    }
+  }, [searchParams]);
   const [profile, setProfile] = useState<any>(null);
   const [courseSortOrder, setCourseSortOrder] = useState<'newest' | 'oldest' | 'progress-desc' | 'progress-asc' | 'alphabetical'>('newest');
 

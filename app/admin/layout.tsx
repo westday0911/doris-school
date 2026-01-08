@@ -13,7 +13,8 @@ import {
   MessageSquare,
   LogOut,
   Bell,
-  Loader2
+  Loader2,
+  PhoneCall
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ const menuItems = [
   { icon: Users, label: "會員管理", href: "/admin/members" },
   { icon: ShoppingCart, label: "訂單管理", href: "/admin/orders" },
   { icon: Wrench, label: "AI 工具管理", href: "/admin/tools" },
+  { icon: PhoneCall, label: "諮詢管理", href: "/admin/contacts" },
 ];
 
 export default function AdminLayout({

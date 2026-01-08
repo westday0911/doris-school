@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ToolActionButtons } from "@/components/tool/ToolActionButtons";
 import {
   Card,
   CardContent,
@@ -12,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { ContactModal } from "@/components/service/ContactModal";
 import { Metadata, ResolvingMetadata } from 'next';
 import { formatDate } from "@/lib/utils";
 
@@ -218,28 +220,12 @@ export default async function ToolDetailPage({ params }: { params: { slug: strin
                   </div>
                 </CardHeader>
                 <CardContent className="p-8 pt-4 space-y-4">
-                  {tool.url ? (
-                    <Button className="w-full h-12 rounded-lg font-black bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 group" asChild>
-                      <a href={tool.url} target="_blank" rel="noopener noreferrer">
-                        前往工具網站
-                        <Globe className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </a>
-                    </Button>
-                  ) : tool.download_url ? (
-                    <Button className="w-full h-12 rounded-lg font-black bg-slate-950 hover:bg-slate-900 shadow-lg group" asChild>
-                      <a href={tool.download_url} download>
-                        立即下載原始碼
-                        <Download className="ml-2 w-4 h-4 group-hover:translate-y-1 transition-transform" />
-                      </a>
-                    </Button>
-                  ) : (
-                    <Button className="w-full h-12 rounded-lg font-black bg-slate-950 hover:bg-slate-900 shadow-lg group" asChild>
-                      <Link href="/auth/register">
-                        立即加入獲取
-                        <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </Link>
-                    </Button>
-                  )}
+                  <ToolActionButtons 
+                    toolId={tool.id}
+                    toolUrl={tool.url}
+                    downloadUrl={tool.download_url}
+                    slug={tool.slug}
+                  />
                   
                   <div className="pt-4 space-y-3">
                     <div className="flex items-center justify-between text-xs text-slate-500">
@@ -248,7 +234,7 @@ export default async function ToolDetailPage({ params }: { params: { slug: strin
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>最後更新</span>
-                      <span className="font-bold text-slate-950">{formatDate(tool.created_at)}</span>
+                      <span className="font-bold text-slate-950">{formatDate(tool.updated_at || tool.created_at)}</span>
                     </div>
                   </div>
 
@@ -261,15 +247,19 @@ export default async function ToolDetailPage({ params }: { params: { slug: strin
               </Card>
 
               {/* 快速客服 */}
-              <div className="p-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center gap-4 group cursor-pointer hover:bg-white hover:border-blue-200 transition-all">
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                  <MessageSquare className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">有任何開發需求？</h4>
-                  <p className="text-xs text-slate-500">提供企業級客製化 AI 工具開發</p>
-                </div>
-              </div>
+              <ContactModal 
+                trigger={
+                  <div className="p-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center gap-4 group cursor-pointer hover:bg-white hover:border-blue-200 transition-all">
+                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">有任何開發需求？</h4>
+                      <p className="text-xs text-slate-500">提供企業級客製化 AI 工具開發</p>
+                    </div>
+                  </div>
+                }
+              />
             </aside>
           </div>
 

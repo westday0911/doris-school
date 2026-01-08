@@ -1,21 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
-import { User, LogOut, LayoutDashboard, ShoppingCart, Loader2 } from "lucide-react";
+import { User, LogOut, LayoutDashboard, ShoppingCart, Loader2, BookOpen, ChevronDown } from "lucide-react";
 import { useCart } from "@/components/providers/cart-provider";
 
 export function Navbar() {
-  const { user, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const { items } = useCart();
   const router = useRouter();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
     router.push("/");
   };
+
+  const displayName = profile?.name || user?.email?.split("@")[0] || "會員";
 
   return (
     <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-50">
@@ -58,23 +62,66 @@ export function Navbar() {
                 <div className="h-8 w-16 bg-slate-50 rounded-lg animate-pulse" />
               </div>
             ) : user ? (
-              <div className="flex items-center gap-3 sm:gap-4">
-                <Link href="/member/dashboard" className="hidden sm:block">
-                  <Button variant="ghost" size="sm" className="gap-2 font-bold">
-                    <LayoutDashboard size={16} /> 會員中心
-                  </Button>
-                </Link>
-                <div className="flex items-center gap-2 border-l border-slate-100 pl-3 sm:pl-4">
-                  <div className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-white text-xs font-bold overflow-hidden border border-slate-200">
-                    {user.email?.[0]?.toUpperCase()}
+              <div className="relative" 
+                onMouseEnter={() => setIsDropdownOpen(true)}
+                onMouseLeave={() => setIsDropdownOpen(false)}
+              >
+                <button 
+                  className="flex items-center gap-2 pl-3 py-1 rounded-full hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100"
+                >
+                  <div className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-white text-xs font-bold overflow-hidden border border-slate-200 shadow-sm">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                    ) : (
+                      displayName[0].toUpperCase()
+                    )}
                   </div>
-                  <span className="text-sm font-bold hidden md:inline-block text-slate-700">
-                    {user.email?.split("@")[0]}
+                  <span className="text-sm font-bold hidden md:inline-block text-slate-700 max-w-[100px] truncate">
+                    {displayName}
                   </span>
-                  <Button variant="ghost" size="icon" onClick={handleSignOut} title="登出" className="h-8 w-8">
-                    <LogOut size={16} className="text-slate-400 hover:text-red-500" />
-                  </Button>
-                </div>
+                  <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="px-4 py-2 border-b border-slate-50 mb-1">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">目前登入</p>
+                      <p className="text-xs font-bold text-slate-900 truncate">{user.email}</p>
+                    </div>
+                    
+                    <Link 
+                      href="/member/dashboard?section=profile" 
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <LayoutDashboard size={16} />
+                      <span>會員中心</span>
+                    </Link>
+                    
+                    <Link 
+                      href="/member/dashboard?section=courses" 
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <BookOpen size={16} />
+                      <span>我的課程</span>
+                    </Link>
+                    
+                    <div className="h-px bg-slate-50 my-1 mx-2" />
+                    
+                    <button 
+                      onClick={() => {
+                        handleSignOut();
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut size={16} />
+                      <span>登出帳號</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2 sm:gap-4">

@@ -1,0 +1,1429 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 AI Tool Library AI 工具圖書館</title>
+    <style>
+      :root {
+        --dark: #0a0908;
+        --deep-blue: #22333b;
+        --beige: #eae0d5;
+        --sand: #c6ac8f;
+        --brown: #5e503f;
+      }
+  
+      body {
+        font-family: sans-serif;
+        padding: 1rem;
+        background: var(--beige);
+        color: var(--dark);
+      }
+      a {
+        color: #5e513f;
+      }
+      .logo {
+        margin-bottom: 0.5rem;
+        text-align: center;
+      }
+      .logo img {
+        height: 40px;
+      }
+      .logo-caption {
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--brown);
+        margin-bottom: 1rem;
+      }
+      .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+      }
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        place-items: flex-end;
+      }
+      .tag {
+        background: var(--sand);
+        color: var(--dark);
+        padding: 0.3rem 0.6rem;
+        border-radius: 999px;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      .tag.active {
+        background: var(--deep-blue);
+        color: var(--beige);
+      }
+      .use-case-tags .tag {
+        display: inline-block;
+        margin: 0 4px 4px 0;
+        font-size: 0.85rem;
+        padding: 0.25rem 0.5rem;
+        background-color: #c6ac8f;
+        color: #0a0908;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+  
+      button.clear {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+        background: var(--brown);
+        color: var(--beige);
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .btn-link {
+        display: inline-block;
+        margin-top: 0.5rem;
+        padding: 0.4rem 0.8rem;
+        background-color: var(--deep-blue);
+        color: var(--beige);
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 0.9rem;
+      }
+      .btn-link:hover {
+        background-color: var(--brown);
+      }
+      select, input[type="text"] {
+        padding: 0.5rem;
+        font-size: 1rem;
+        border: 1px solid var(--brown);
+        border-radius: 5px;
+        background-color: white;
+        color: var(--dark);
+        width: 165px;
+      }
+      .tool-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .tool-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      }
+      .tool-card img {
+        max-width: 100%;
+        max-height: 80px;
+        height: auto;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        object-fit: contain;
+  
+      }
+      .tool-card h3 {
+        margin: 0 0 0.5rem;
+      }
+      .tool-meta {
+        font-size: 0.9rem;
+        color: var(--brown);
+      }
+      footer {
+        margin-top: 3rem;
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--deep-blue);
+      }
+      .hidden-tag {
+        display: none;
+      }
+      @media (min-width: 768px) {
+        .tool-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+  
+    <h1 style="text-align: center">🧠 AI Tool Library AI 工具圖書館</h1>
+    <div class="logo">
+      <a href="https://doris-school.com" target="_blank">
+        <img src="https://doris-school.com/wp-content/uploads/2025/01/logo.png" alt="Doris School Logo">
+      </a>
+    </div>
+    <div class="logo-caption">by <a href="https://doris-school.com" target="_blank" rel="noopener noreferrer">Doris AI 學院</a></div>
+  
+    <div class="filter-bar">
+      <select id="categoryFilter">
+        <option value="">📂 所有分類</option>
+      </select>
+      <input type="text" id="searchInput" placeholder="🔍 輸入關鍵字搜尋...">
+      <button class="clear" id="clearFilters">清除篩選</button>
+    </div>
+  
+    <div class="tags" id="useCaseTags"></div>
+  
+    <div class="tool-list" id="toolList"></div>
+  
+    <footer>
+    本頁內容由 &copy; 2025 <a href="https://dorisai.school" target="_blank" rel="noopener noreferrer">DorisAI學院</a> 製作與維護。版權所有，請勿未經授權轉載。
+  </footer>
+  
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const tools = [
+          {
+            name: "ChatGPT",
+            image: "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
+            category: "文案生成",
+            description: "由 OpenAI 開發的對話式 AI，可進行撰寫、翻譯、摘要等任務。",
+            use_case: "客服對話、文章生成、教學輔助",
+            url: "https://chat.openai.com"
+          },
+          {
+            name: "Midjourney",
+            image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Midjourney_Emblem.png/250px-Midjourney_Emblem.png",
+            category: "圖像生成",
+            description: "透過提示詞產生藝術風格圖片，廣受創作者喜愛。",
+            use_case: "行銷圖像、藝術創作、插畫設計",
+            url: "https://www.midjourney.com"
+          },
+          {
+            name: "Notion AI",
+            image: "https://www.notion.so/images/favicon.ico",
+            category: "知識管理",
+            description: "整合在 Notion 筆記中的 AI 寫作與彙整功能。",
+            use_case: "會議紀錄、知識整理、筆記摘要",
+            url: "https://www.notion.so/product/ai"
+          },
+          {
+            name: "Copy.ai",
+            image: "https://cdn.prod.website-files.com/628288c5cd3e8411b90a36a4/6797ee68ae7908e605a9a4d0_copy_logo-all-dark.svg",
+            category: "文案生成",
+            description: "幫助行銷人員與創作者快速產出高轉換率的文案內容。",
+            use_case: "廣告文案、Email行銷、社群貼文",
+            url: "https://www.copy.ai"
+          },
+          {
+            name: "Runway ML",
+            image: "https://logo.clearbit.com/runwayml.com",
+            category: "影片剪輯",
+            description: "AI 驅動的影片編輯工具，支援背景去除、物件擦除與文字生成影片。",
+            use_case: "創意影片、內容製作、社群行銷",
+            url: "https://runwayml.com"
+          },
+          {
+            name: "Descript",
+            image: "https://logo.clearbit.com/descript.com",
+            category: "語音辨識",
+            description: "可將語音轉為逐字稿、支援編輯、音訊與影片同步修改的多合一工具。",
+            use_case: "Podcast 剪輯、逐字稿整理、影片配音",
+            url: "https://www.descript.com"
+          },
+          {
+            name: "Krisp",
+            image: "https://logo.clearbit.com/krisp.ai",
+            category: "語音辨識",
+            description: "即時去除背景雜音的 AI 工具，提升線上會議音訊品質。",
+            use_case: "線上會議、遠距教學、專業錄音",
+            url: "https://krisp.ai"
+          },
+          {
+            name: "Tome",
+            image: "https://tome.app/favicon.ico",
+            category: "簡報工具",
+            description: "AI 驅動的簡報與敘事內容創作平台，支援自動排版與圖文生成。",
+            use_case: "創業簡報、提案設計、內容簡報",
+            url: "https://tome.app"
+          },
+          {
+            name: "Perplexity AI",
+            image: "https://www.perplexity.ai/favicon.ico",
+            category: "知識查詢",
+            description: "結合搜尋與 AI 問答的智慧搜尋引擎，適合研究與快速理解議題。",
+            use_case: "研究學習、報告撰寫、實時問答",
+            url: "https://www.perplexity.ai"
+          },
+          {
+            name: "Gamma",
+            image: "https://gamma.app/favicon.ico",
+            category: "簡報工具",
+            description: "自動生成視覺化簡報的 AI 工具，介面簡潔且支援多人協作。",
+            use_case: "即時簡報、內部提案、教學展示",
+            url: "https://gamma.app"
+          },
+          {
+            name: "Looka",
+            image: "https://logo.clearbit.com/looka.com",
+            category: "圖像生成",
+            description: "AI Logo 與品牌識別設計工具，支援快速建立品牌視覺。",
+            use_case: "創業品牌設計、Logo 製作、名片樣式生成",
+            url: "https://looka.com"
+          },
+          {
+            name: "Durable",
+            image: "https://logo.clearbit.com/durable.co",
+            category: "自動化工具",
+            description: "一鍵建立小型商業網站與行銷流程，支援 CRM 與 AI 寫文案。",
+            use_case: "快速建立網站、個人品牌、SOHO 業務",
+            url: "https://durable.co"
+          },
+          {
+            name: "Beautiful.ai",
+            image: "https://logo.clearbit.com/beautiful.ai",
+            category: "簡報工具",
+            description: "智能簡報設計工具，幫助用戶快速創建專業幻燈片。",
+            use_case: "商業簡報、會議報告、教學材料",
+            url: "https://www.beautiful.ai"
+          },
+          {
+            name: "MagickPen",
+            image: "https://logo.clearbit.com/magickpen.com",
+            category: "文案生成",
+            description: "多語言寫作與翻譯工具，適用於部落格、商業與學術應用。",
+            use_case: "內容創作、翻譯潤稿、SEO 撰文",
+            url: "https://magickpen.com"
+          },
+          {
+            name: "AI Dungeon",
+            image: "https://logo.clearbit.com/aidungeon.io",
+            category: "遊戲娛樂",
+            description: "互動式文字冒險生成器，玩家可與 AI 共同創造故事劇情。",
+            use_case: "文字冒險、創意寫作、娛樂體驗",
+            url: "https://play.aidungeon.io"
+          },
+          {
+            name: "Leonardo.Ai",
+            image: "https://logo.clearbit.com/leonardo.ai",
+            category: "圖像生成",
+            description: "支援遊戲素材與角色設計的 AI 圖像生成平台。",
+            use_case: "概念藝術、遊戲開發、視覺素材",
+            url: "https://leonardo.ai"
+          },
+          {
+            name: "QuillBot",
+            image: "https://logo.clearbit.com/quillbot.com",
+            category: "文案生成",
+            description: "專注於改寫與語意潤色的 AI 工具，協助改善英文寫作。",
+            use_case: "學術寫作、Email潤色、內容改寫",
+            url: "https://quillbot.com"
+          },
+          {
+            name: "Writesonic",
+            image: "https://logo.clearbit.com/writesonic.com",
+            category: "文案生成",
+            description: "支援 SEO 文案、部落格、廣告等多種用途的寫作平台。",
+            use_case: "行銷文案、部落格、商品描述",
+            url: "https://writesonic.com"
+          },
+          {
+            name: "Soundraw",
+            image: "https://logo.clearbit.com/soundraw.io",
+            category: "音樂生成",
+            description: "AI 自動產生背景音樂，可依情境與節奏客製化調整。",
+            use_case: "影片配樂、Podcast 背景、創作音樂",
+            url: "https://soundraw.io"
+          },
+          {
+            name: "HeyGen",
+            image: "https://logo.clearbit.com/heygen.com",
+            category: "影片生成",
+            description: "AI 生成虛擬人物口白影片，支援語音同步與人物切換。",
+            use_case: "教學影片、產品介紹、商業展示",
+            url: "https://www.heygen.com"
+          },
+          {
+            name: "Opus Clip",
+            image: "https://logo.clearbit.com/opus.pro",
+            category: "影片剪輯",
+            description: "可將長影片智慧裁切為短影音，並自動加字幕與標題。",
+            use_case: "短影音製作、自媒體經營、TikTok剪輯",
+            url: "https://www.opus.pro"
+          },
+          {
+            name: "Taskade",
+            image: "https://logo.clearbit.com/taskade.com",
+            category: "生產力工具",
+            description: "整合任務管理、AI 筆記與協作的工作平台。",
+            use_case: "團隊協作、任務追蹤、腦力激盪",
+            url: "https://www.taskade.com"
+          },
+          {
+            name: "Jenni AI",
+            image: "https://logo.clearbit.com/jenni.ai",
+            category: "文案生成",
+            description: "適合學生與研究者使用的 AI 寫作輔助工具。",
+            use_case: "學術寫作、論文起草、學習筆記",
+            url: "https://jenni.ai"
+          },
+          {
+            name: "Cleanup.pictures",
+            image: "https://logo.clearbit.com/cleanup.pictures",
+            category: "圖像編輯",
+            description: "快速去除圖片中不需要的物件或背景，適合修圖。",
+            use_case: "商品圖處理、人像清理、背景編修",
+            url: "https://cleanup.pictures"
+          },
+          {
+            name: "Fliki",
+            image: "https://logo.clearbit.com/fliki.ai",
+            category: "影片生成",
+            description: "將文字轉為影片與語音內容，支援多語言與角色語音。",
+            use_case: "影片創作、部落格轉影音、教學配音",
+            url: "https://fliki.ai"
+          },
+          {
+            name: "Scribbr AI",
+            image: "https://logo.clearbit.com/scribbr.com",
+            category: "文案生成",
+            description: "針對學術論文的改寫與潤色工具。",
+            use_case: "學術改寫、論文潤飾、語言提升",
+            url: "https://www.scribbr.com"
+          },
+          {
+            name: "Stockimg AI",
+            image: "https://logo.clearbit.com/stockimg.ai",
+            category: "圖像生成",
+            description: "可生成各種風格的商業用途圖片，如書封、海報、icon。",
+            use_case: "平面設計、商品展示、社群圖像",
+            url: "https://stockimg.ai"
+          },
+          {
+            name: "Genei",
+            image: "https://logo.clearbit.com/genei.io",
+            category: "知識查詢",
+            description: "可自動為文件或網頁產生摘要與重點。",
+            use_case: "研究資料彙整、學習筆記、報告準備",
+            url: "https://www.genei.io"
+          },
+          {
+            name: "Replika",
+            image: "https://logo.clearbit.com/replika.com",
+            category: "聊天陪伴",
+            description: "AI 虛擬陪伴者，具備情緒對話能力。",
+            use_case: "情感支持、社交互動、自我反思",
+            url: "https://replika.com"
+          },
+          {
+            name: "Poised",
+            image: "https://logo.clearbit.com/poised.com",
+            category: "語音分析",
+            description: "分析線上會議中的語音表達與溝通技巧，給予建議。",
+            use_case: "會議表現回饋、溝通訓練、聲音分析",
+            url: "https://www.poised.com"
+          },
+          {
+            name: "Peppertype",
+            image: "https://logo.clearbit.com/peppertype.ai",
+            category: "文案生成",
+            description: "快速生成各種文案的 AI 平台，支援多類內容模板。",
+            use_case: "部落格撰寫、社群文案、產品說明",
+            url: "https://www.peppertype.ai"
+          },
+          {
+            name: "Kaiber",
+            image: "https://logo.clearbit.com/kaiber.ai",
+            category: "影片生成",
+            description: "輸入靜態圖片或提示詞，即可生成動畫或影片。",
+            use_case: "音樂視覺化、創意動畫、社群影片",
+            url: "https://www.kaiber.ai"
+          },
+          {
+            name: "Typewise",
+            image: "https://logo.clearbit.com/typewise.app",
+            category: "文案生成",
+            description: "AI 輔助寫作與智慧鍵盤，提升輸入效率與語句自然度。",
+            use_case: "智慧輸入、Email 撰寫、客服溝通",
+            url: "https://www.typewise.app"
+          },
+          {
+            name: "Resume.io",
+            image: "https://logo.clearbit.com/resume.io",
+            category: "履歷生成",
+            description: "AI 幫助你建立專業履歷、自傳與求職信的線上平台。",
+            use_case: "找工作、履歷設計、求職準備",
+            url: "https://resume.io"
+          },
+          {
+            name: "Murf",
+            image: "https://logo.clearbit.com/murf.ai",
+            category: "語音合成",
+            description: "提供自然語音的文字轉語音服務，支援多種語言與音色。",
+            use_case: "行銷影片配音、教學音訊、Podcast 音軌",
+            url: "https://murf.ai"
+          },
+          {
+            name: "Unbounce Smart Copy",
+            image: "https://logo.clearbit.com/unbounce.com",
+            category: "文案生成",
+            description: "專為行銷與轉換優化而設計的 AI 文案創建工具。",
+            use_case: "Landing page 文案、A/B 測試、廣告文字",
+            url: "https://unbounce.com/product/smart-copy"
+          },
+          {
+            name: "LALAL.AI",
+            image: "https://logo.clearbit.com/lalal.ai",
+            category: "音訊編輯",
+            description: "AI 分離人聲與背景音，適合音樂製作與混音需求。",
+            use_case: "卡拉 OK、音軌分離、音樂後製",
+            url: "https://www.lalal.ai"
+          },
+          {
+            name: "Neural.love",
+            image: "https://logo.clearbit.com/neural.love",
+            category: "圖像生成",
+            description: "可生成頭像、修復老照片與風格化圖像的 AI 平台。",
+            use_case: "社群頭像、歷史修圖、視覺創作",
+            url: "https://neural.love"
+          },
+          {
+            name: "Khanmigo",
+            image: "https://logo.clearbit.com/khanacademy.org",
+            category: "教育學習",
+            description: "由可汗學院開發的 AI 助教，可提供個人化教學引導與解題提示。",
+            use_case: "學科輔導、自主學習、數學解題",
+            url: "https://www.khanacademy.org/khan-labs"
+          },
+          {
+            name: "Socratic",
+            image: "https://logo.clearbit.com/google.com",
+            category: "教育學習",
+            description: "Google 開發的學習輔助 App，拍照即可獲得題目解析與延伸解釋。",
+            use_case: "國高中題目解析、拍照學習、知識延伸",
+            url: "https://socratic.org"
+          },
+          {
+            name: "Quillionz",
+            image: "https://logo.clearbit.com/quillionz.com",
+            category: "教育學習",
+            description: "自動生成測驗題目與教學摘要的 AI 工具，適合教師備課與出題。",
+            use_case: "課堂小考、教案設計、學習檢測",
+            url: "https://quillionz.com"
+          },
+          {
+            name: "Explain Like I'm Five AI",
+            image: "https://logo.clearbit.com/explainlikeimfive.io",
+            category: "教育學習",
+            description: "將複雜概念用五歲小孩也能懂的語言解釋，幫助學生快速掌握核心。",
+            use_case: "科學普及、教學簡化、學生自學",
+            url: "https://explainlikeimfive.io"
+          },
+          {
+            name: "Twee",
+            image: "https://logo.clearbit.com/twee.com",
+            category: "教育學習",
+            description: "專為語言教師設計的 AI 教學工具，能自動產出教學活動與練習題。",
+            use_case: "英語教學、語文學習活動設計",
+            url: "https://www.twee.com"
+          },
+          {
+            name: "GradeScope",
+            image: "https://logo.clearbit.com/gradescope.com",
+            category: "教育學習",
+            description: "自動批改與評分的 AI 教學平台，支援紙本與線上測驗。",
+            use_case: "學校考卷批改、程式作業評分、教學效率提升",
+            url: "https://www.gradescope.com"
+          },
+          {
+            name: "Scribe",
+            image: "https://logo.clearbit.com/scribehow.com",
+            category: "教育學習",
+            description: "自動記錄操作流程並生成教學文件，適合教學與訓練手冊撰寫。",
+            use_case: "流程教學、學生操作說明、自動化教材產出",
+            url: "https://scribehow.com"
+          },
+          {
+            name: "Diffit",
+            image: "https://web.diffit.me/favicon.ico",
+            category: "教育學習",
+            description: "將任意文章轉換為分齡適讀的學習材料，支援多種教學活動生成。",
+            use_case: "差異化教學、學生閱讀教材設計",
+            url: "https://web.diffit.me"
+          },
+          {
+            "name": "Curipod",
+            "image": "https://www.curipod.com/favicon.png",
+            "category": "教育學習",
+            "description": "一鍵生成互動式簡報與課堂討論活動，適合 K-12 教學場景。",
+            "use_case": "互動教學、課堂活動設計、簡報產出",
+            "url": "https://www.curipod.com"
+          },
+          {
+            "name": "Canva AI",
+            "image": "https://www.canva.com/favicon.ico",
+            "category": "設計創作",
+            "description": "整合多種 AI 功能如文案生成、圖片生成與設計建議的全方位設計平台。",
+            "use_case": "社群貼文設計、簡報製作、品牌視覺創作",
+            "url": "https://www.canva.com/ai/"
+          },
+          {
+            name: "Uizard",
+            image: "https://uizard.io/favicon.ico",
+            category: "設計創作",
+            description: "將手繪草圖或文字轉換為互動 UI 設計，無需編碼即可設計 App 或網站。",
+            use_case: "UI/UX 設計、產品原型製作、快速 wireframe 建立",
+            url: "https://uizard.io"
+          },
+          {
+            name: "Designs.ai",
+            image: "https://designs.ai/favicon.ico",
+            category: "設計創作",
+            description: "一站式設計平台，可製作 Logo、影片、語音與文案內容。",
+            use_case: "品牌視覺設計、影片製作、社群行銷素材",
+            url: "https://designs.ai"
+          },
+          {
+            name: "Khroma",
+            image: "https://www.khroma.co/favicon.ico",
+            category: "設計創作",
+            description: "透過 AI 挑選並生成色彩組合，幫助設計師建立色彩靈感。",
+            use_case: "品牌配色、網站色調設計、視覺創作",
+            url: "https://www.khroma.co"
+          },
+          {
+            name: "Remove.bg",
+            image: "https://www.remove.bg/favicon.ico",
+            category: "設計創作",
+            description: "自動去背工具，可迅速將人物或物品從背景中分離。",
+            use_case: "商品圖片處理、社群素材去背、快速設計合成",
+            url: "https://www.remove.bg"
+          },
+          {
+            name: "AutoDraw",
+            image: "https://www.gstatic.com/autodraw/icons/favicon.ico",
+            category: "設計創作",
+            description: "Google 開發的 AI 速畫工具，可將潦草手繪轉為專業圖示。",
+            use_case: "視覺圖示快速草圖、教育繪圖、簡易創作",
+            url: "https://www.autodraw.com"
+          },
+          {
+            name: "Let's Enhance",
+            image: "https://letsenhance.io/favicon.ico",
+            category: "設計創作",
+            description: "透過 AI 對圖片進行無損放大與增強，保留細節與畫質。",
+            use_case: "圖片放大、印刷準備、老舊照片修復",
+            url: "https://letsenhance.io"
+          },
+          {
+            name: "Illustroke",
+            image: "https://illustroke.com/favicon.ico",
+            category: "設計創作",
+            description: "將簡短文字轉換為向量風格插畫，可自訂風格與構圖。",
+            use_case: "文章插圖、社群圖像設計、教育用圖",
+            url: "https://illustroke.com"
+          },
+          {
+            name: "Fontjoy",
+            image: "https://fontjoy.com/favicon.ico",
+            category: "設計創作",
+            description: "使用 AI 搭配字體風格，幫助設計師找到最佳字體組合。",
+            use_case: "品牌設計、網頁字體搭配、排版視覺統整",
+            url: "https://fontjoy.com"
+          },
+          {
+            name: "AutoGPT",
+            image: "https://github.com/Torantulino/Auto-GPT/raw/master/docs/img/logo.png",
+            category: "AI Agent",
+            description: "開源自動化 AI Agent，具備目標導向的任務執行能力，能自我規劃與執行多步驟任務。",
+            use_case: "研究、網站建立、自動寫報告",
+            url: "https://github.com/Torantulino/Auto-GPT"
+          },
+          {
+            name: "AgentGPT",
+            image: "https://agentgpt.reworkd.ai/favicon.ico",
+            category: "AI Agent",
+            description: "無需程式能力即可創建 AI Agent，使用者只需輸入目標，Agent 會自動規劃任務。",
+            use_case: "商業自動化、內容研究、流程優化",
+            url: "https://agentgpt.reworkd.ai"
+          },
+          {
+            name: "SuperAGI",
+            image: "https://superagi.com/favicon.ico",
+            category: "AI Agent",
+            description: "適用於企業與開發者的高階 AI Agent 框架，支援持久記憶與工具插件。",
+            use_case: "企業流程自動化、個人助手開發",
+            url: "https://superagi.com"
+          },
+          {
+            name: "GodMode",
+            image: "https://godmode.space/favicon.ico",
+            category: "AI Agent",
+            description: "網頁版 AI Agent 執行器，提供類似 AutoGPT 的多步驟任務規劃介面。",
+            use_case: "網站自動化操作、創意生成、自動報告製作",
+            url: "https://godmode.space"
+          },
+          {
+            name: "CrewAI",
+            image: "https://crewai.com/favicon.ico",
+            category: "AI Agent",
+            description: "可組織多個專業 AI Agent 成為團隊共同合作執行任務，支援角色分工。",
+            use_case: "內容行銷團隊、自動客服、跨領域分析",
+            url: "https://crewai.com"
+          },
+          {
+            name: "LangChain Agents",
+            image: "https://www.langchain.com/favicon.ico",
+            category: "AI Agent",
+            description: "LangChain 提供可與外部 API、工具整合的 Agent 架構，支援多步驟邏輯推理。",
+            use_case: "智能問答系統、AI 遊戲角色、聊天助手",
+            url: "https://www.langchain.com"
+          },
+          {
+            name: "ChatDev",
+            image: "https://github.com/OpenBMB/ChatDev/raw/main/docs/logo.png",
+            category: "AI Agent",
+            description: "模擬開發團隊的 AI Agent 系統，角色分工協作打造產品原型。",
+            use_case: "AI 模擬開發、教育訓練、自動建構產品流程",
+            url: "https://github.com/OpenBMB/ChatDev"
+          },
+          {
+            name: "MetaGPT",
+            image: "https://github.com/geekan/MetaGPT/raw/main/assets/icon.png",
+            category: "AI Agent",
+            description: "以類似企業協作的方式模擬產品開發，分工明確，專注於軟體規劃與生成。",
+            use_case: "產品設計、軟體開發、企業 AI 模擬",
+            url: "https://github.com/geekan/MetaGPT"
+          },
+          {
+            name: "AI Legion",
+            image: "https://ailegion.xyz/favicon.ico",
+            category: "AI Agent",
+            description: "多 Agent 協作平台，支援角色扮演、自我優化任務、可視化任務流程。",
+            use_case: "AI 團隊工作、自動專案管理、虛擬助理組織",
+            url: "https://ailegion.xyz"
+          },
+          {
+            name: "OpenAgents",
+            image: "https://github.com/OpenAgentsInc/OpenAgents/raw/main/docs/logo.png",
+            category: "AI Agent",
+            description: "開源 AI Agent 系統，支援將 GPT 接入日常工具如 Gmail、Google Drive 等。",
+            use_case: "郵件管理、文件分析、自動化協助",
+            url: "https://github.com/OpenAgentsInc/OpenAgents"
+          },
+          {
+            name: "Jasper",
+            image: "https://www.jasper.ai/favicon.ico",
+            category: "商業應用",
+            description: "行銷寫作助手，能根據品牌語調撰寫高轉換內容。",
+            use_case: "部落格撰寫、廣告文案、銷售信件",
+            url: "https://www.jasper.ai"
+          },
+          {
+            name: "HubSpot ChatSpot",
+            image: "https://www.hubspot.com/hubfs/favicon.ico",
+            category: "商業應用",
+            description: "結合 CRM 的 AI 助理，能執行銷售報告生成、潛在客戶追蹤等任務。",
+            use_case: "業務流程自動化、數據查詢、CRM 管理",
+            url: "https://www.hubspot.com/products/chatspot"
+          },
+          {
+            name: "Tidio AI",
+            image: "https://www.tidio.com/favicon.ico",
+            category: "商業應用",
+            description: "整合 AI 客服聊天機器人的商業即時通訊平台。",
+            use_case: "即時客服、自動回覆、商店支援",
+            url: "https://www.tidio.com"
+          },
+          {
+            name: "Lavender",
+            image: "https://www.lavender.ai/favicon.ico",
+            category: "商業應用",
+            description: "幫助銷售人員提升 cold email 的點擊率與回覆率的 AI 寫作輔助工具。",
+            use_case: "B2B 銷售開發、Email 優化",
+            url: "https://www.lavender.ai"
+          },
+          {
+            name: "Regie.ai",
+            image: "https://www.regie.ai/favicon.ico",
+            category: "商業應用",
+            description: "自動生成業務流程腳本與行銷內容，提升銷售效率。",
+            use_case: "客戶拓展、自動銷售腳本、自動內容行銷",
+            url: "https://www.regie.ai"
+          },
+          {
+            name: "Gong.io",
+            image: "https://www.gong.io/favicon.ico",
+            category: "商業應用",
+            description: "分析銷售通話與電子郵件，提供績效建議與客戶洞察。",
+            use_case: "銷售流程優化、團隊訓練、通話分析",
+            url: "https://www.gong.io"
+          },
+          {
+            name: "Fireflies.ai",
+            image: "https://www.fireflies.ai/favicon.ico",
+            category: "商業應用",
+            description: "會議紀錄與摘要工具，支援多平台整合與任務追蹤。",
+            use_case: "會議紀錄、CRM 紀錄同步、任務提取",
+            url: "https://www.fireflies.ai"
+          },
+          {
+            name: "CopyMonkey",
+            image: "https://copymonkey.ai/favicon.ico",
+            category: "商業應用",
+            description: "專為電商設計的 AI 工具，自動產生 Amazon 商品描述與關鍵字。",
+            use_case: "電商 SEO、商品行銷、內容優化",
+            url: "https://copymonkey.ai"
+          },
+          {
+            name: "Browse AI",
+            image: "https://www.browse.ai/favicon.ico",
+            category: "商業應用",
+            description: "無程式碼網頁資料爬蟲，自動擷取定價、競品與客戶資料。",
+            use_case: "競品監控、價格分析、市場情報蒐集",
+            url: "https://www.browse.ai"
+          },
+          {
+            name: "Fathom",
+            image: "https://fathom.video/favicon.ico",
+            category: "商業應用",
+            description: "Zoom 會議智慧摘要工具，自動記錄重點、生成待辦清單。",
+            use_case: "會議效率提升、任務協作、跨部門溝通",
+            url: "https://fathom.video"
+          },
+          {
+            name: "GitHub Copilot",
+            image: "https://github.githubassets.com/favicons/favicon.png",
+            category: "程式開發",
+            description: "由 GitHub 與 OpenAI 聯合開發的程式碼補全與建議工具。",
+            use_case: "即時補全、函式撰寫、自動除錯",
+            url: "https://github.com/features/copilot"
+          },
+          {
+            name: "Tabnine",
+            image: "https://www.tabnine.com/favicon.ico",
+            category: "程式開發",
+            description: "支援多種語言的 AI 程式碼補全工具，強化開發效率。",
+            use_case: "快速撰寫重複程式碼、補全建議",
+            url: "https://www.tabnine.com"
+          },
+          {
+            name: "Codeium",
+            image: "https://www.codeium.com/favicon.ico",
+            category: "程式開發",
+            description: "免費的 AI 程式碼助手，支援 IDE 整合與自然語言指令。",
+            use_case: "自然語言轉程式、程式片段補全",
+            url: "https://www.codeium.com"
+          },
+          {
+            name: "MutableAI",
+            image: "https://mutable.ai/favicon.ico",
+            category: "程式開發",
+            description: "AI 驅動的 VS Code 插件，自動優化與撰寫乾淨程式碼。",
+            use_case: "程式最佳化、重構、自動化註解",
+            url: "https://mutable.ai"
+          },
+          {
+            name: "CodiumAI",
+            image: "https://www.codium.ai/favicon.ico",
+            category: "程式開發",
+            description: "幫助開發者自動產生單元測試與驗證邏輯的 AI 工具。",
+            use_case: "單元測試生成、程式驗證、自動測試",
+            url: "https://www.codium.ai"
+          },
+          {
+            name: "Amazon CodeWhisperer",
+            image: "https://d1.awsstatic.com/favicon.ico",
+            category: "程式開發",
+            description: "Amazon 推出的 AI 程式碼補全與安全分析工具。",
+            use_case: "AWS 開發補助、安全檢查、自動生成",
+            url: "https://aws.amazon.com/codewhisperer"
+          },
+          {
+            name: "Phind",
+            image: "https://www.phind.com/favicon.ico",
+            category: "程式開發",
+            description: "專為開發者打造的搜尋引擎，回覆程式問題並附程式碼。",
+            use_case: "查找解法、Debug 支援、學習資源",
+            url: "https://www.phind.com"
+          },
+          {
+            name: "AskCodi",
+            image: "https://www.askcodi.com/favicon.ico",
+            category: "程式開發",
+            description: "支援多種開發任務的 AI 工具，包含 SQL 查詢與 API 文件生成。",
+            use_case: "程式碼生成、查詢語法、API 建立",
+            url: "https://www.askcodi.com"
+          },
+          {
+            name: "Sourcery",
+            image: "https://sourcery.ai/favicon.ico",
+            category: "程式開發",
+            description: "針對 Python 提供自動重構與建議的 AI 工具。",
+            use_case: "程式簡化、最佳化邏輯、可讀性提升",
+            url: "https://sourcery.ai"
+          },
+          {
+            name: "Pieces for Developers",
+            image: "https://www.pieces.app/favicon.ico",
+            category: "程式開發",
+            description: "支援程式碼片段管理與智能備註的開發輔助工具。",
+            use_case: "程式碼管理、工具整合、團隊協作",
+            url: "https://www.pieces.app"
+          },
+          {
+            name: "Lumen",
+            image: "https://www.lumen.me/favicon.ico",
+            category: "營養與健康",
+            description: "透過呼吸檢測代謝，提供個人化的飲食建議與代謝追蹤。",
+            use_case: "減脂計畫、代謝監控、低碳飲食規劃",
+            url: "https://www.lumen.me"
+          },
+          {
+            name: "ZOE",
+            image: "https://joinzoe.com/favicon.ico",
+            category: "營養與健康",
+            description: "基於腸道菌群與血糖反應的 AI 健康營養計畫工具。",
+            use_case: "個人化飲食、血糖穩定、腸道健康追蹤",
+            url: "https://joinzoe.com"
+          },
+          {
+            name: "MyFitnessPal + AI",
+            image: "https://www.myfitnesspal.com/favicon.ico",
+            category: "營養與健康",
+            description: "結合 AI 的熱量追蹤 App，可提供建議攝取與運動分析。",
+            use_case: "飲食紀錄、熱量計算、運動配餐",
+            url: "https://www.myfitnesspal.com"
+          },
+          {
+            name: "Fitbit AI Insights",
+            image: "https://www.fitbit.com/favicon.ico",
+            category: "營養與健康",
+            description: "利用 AI 分析睡眠、心率與活動數據並提供健康建議。",
+            use_case: "日常健康監控、睡眠優化、活動分析",
+            url: "https://www.fitbit.com"
+          },
+          {
+            name: "CarePredict",
+            image: "https://www.carepredict.com/favicon.ico",
+            category: "營養與健康",
+            description: "智慧照護穿戴設備與 AI 健康預警系統，適合長者使用。",
+            use_case: "長者健康追蹤、異常行為預警、照護通知",
+            url: "https://www.carepredict.com"
+          },
+          {
+            name: "NutriSense",
+            image: "https://www.nutrisense.io/favicon.ico",
+            category: "營養與健康",
+            description: "以 AI 分析連續血糖監測數據，提供個人化飲食回饋。",
+            use_case: "控制血糖、飲食調整、減重",
+            url: "https://www.nutrisense.io"
+          },
+          {
+            name: "WHOOP Coach",
+            image: "https://www.whoop.com/favicon.ico",
+            category: "營養與健康",
+            description: "穿戴裝置配合 AI 教練分析恢復狀態並建議訓練與睡眠。",
+            use_case: "運動恢復管理、睡眠分析、壓力調節",
+            url: "https://www.whoop.com"
+          },
+          {
+            name: "Foodvisor",
+            image: "https://www.foodvisor.io/favicon.ico",
+            category: "營養與健康",
+            description: "AI 食物辨識相機與營養追蹤 App，拍照即獲得營養資訊。",
+            use_case: "快速記錄飲食、熱量估算、營養日誌",
+            url: "https://www.foodvisor.io"
+          },
+          {
+            name: "Welltory",
+            image: "https://welltory.com/favicon.ico",
+            category: "營養與健康",
+            description: "結合 AI 的 HRV 壓力追蹤與生活習慣分析 App。",
+            use_case: "壓力管理、身心健康、自我追蹤",
+            url: "https://welltory.com"
+          },
+          {
+            name: "Lifesum",
+            image: "https://www.lifesum.com/favicon.ico",
+            category: "營養與健康",
+            description: "健康飲食與體重管理 App，使用 AI 推薦餐點與規劃飲食計畫。",
+            use_case: "飲食追蹤、體重控制、健康食譜建議",
+            url: "https://www.lifesum.com"
+          },
+          {
+            name: "Whisper by OpenAI",
+            image: "https://openai.com/favicon.ico",
+            category: "語音處理",
+            description: "開源的語音辨識模型，支援多語言語音轉文字，辨識率高。",
+            use_case: "語音轉錄、會議記錄、語音資料分析",
+            url: "https://openai.com/research/whisper"
+          },
+          {
+            name: "AssemblyAI",
+            image: "https://www.assemblyai.com/favicon.ico",
+            category: "語音處理",
+            description: "商用級語音辨識 API，支援語者分離、內容過濾等高階功能。",
+            use_case: "大型語音資料分析、客服轉錄、自動字幕",
+            url: "https://www.assemblyai.com"
+          },
+          {
+            name: "Speechmatics",
+            image: "https://www.speechmatics.com/favicon.ico",
+            category: "語音處理",
+            description: "企業級語音辨識平台，支援多語系並具即時處理能力。",
+            use_case: "多語言會議記錄、電信應用、直播字幕",
+            url: "https://www.speechmatics.com"
+          },
+          {
+            name: "Descript Overdub",
+            image: "https://www.descript.com/favicon.ico",
+            category: "語音處理",
+            description: "Descript 的 AI 配音工具，可建立個人聲音模型進行文字合成語音。",
+            use_case: "Podcast 補錄、影片旁白、虛擬聲音創作",
+            url: "https://www.descript.com/overdub"
+          },
+          {
+            name: "Replica Studios",
+            image: "https://replicastudios.com/favicon.ico",
+            category: "語音處理",
+            description: "提供高品質 AI 聲音演員，適用於遊戲、動畫、廣告。",
+            use_case: "角色配音、遊戲音效、影像旁白",
+            url: "https://replicastudios.com"
+          },
+          {
+            name: "Murf AI",
+            image: "https://murf.ai/favicon.ico",
+            category: "語音處理",
+            description: "支援自然語音合成的文字轉語音平台，內建多語系與情緒控制。",
+            use_case: "簡報配音、教學影片、企業簡訊",
+            url: "https://murf.ai"
+          },
+          {
+            name: "Sonix",
+            image: "https://sonix.ai/favicon.ico",
+            category: "語音處理",
+            description: "自動語音轉錄工具，支援語者分離與編輯、導出字幕檔。",
+            use_case: "逐字稿製作、法庭記錄、影片字幕",
+            url: "https://sonix.ai"
+          },
+          {
+            name: "Speechify",
+            image: "https://speechify.com/favicon.ico",
+            category: "語音處理",
+            description: "AI 語音朗讀工具，可朗讀文章、PDF 與網站內容。",
+            use_case: "聽書學習、通勤吸收內容、閱讀障礙輔助",
+            url: "https://speechify.com"
+          },
+          {
+            name: "Voicemod AI",
+            image: "https://www.voicemod.net/favicon.ico",
+            category: "語音處理",
+            description: "即時聲音變聲與 AI 聲音合成，廣受直播與遊戲族群喜愛。",
+            use_case: "直播娛樂、角色扮演、社群內容創作",
+            url: "https://www.voicemod.net"
+          },
+          {
+            name: "Resemble AI",
+            image: "https://www.resemble.ai/favicon.ico",
+            category: "語音處理",
+            description: "高品質語音複製與生成平台，支援 API 串接與語音克隆。",
+            use_case: "個人化語音助理、品牌聲音、配音自動化",
+            url: "https://www.resemble.ai"
+          },
+          {
+            name: "DALL·E",
+            image: "https://openai.com/favicon.ico",
+            category: "圖像生成",
+            description: "由 OpenAI 推出的圖像生成模型，可根據文字提示產生高品質圖像。",
+            use_case: "創意設計、視覺原型、廣告素材",
+            url: "https://openai.com/dall-e"
+          },
+          {
+            name: "Craiyon (原 DALL·E Mini)",
+            image: "https://www.craiyon.com/favicon.ico",
+            category: "圖像生成",
+            description: "免費圖像生成平台，快速產出趣味風格插圖。",
+            use_case: "概念草圖、娛樂用途、教學示範",
+            url: "https://www.craiyon.com"
+          },
+          {
+            name: "NightCafe",
+            image: "https://creator.nightcafe.studio/favicon.ico",
+            category: "圖像生成",
+            description: "支援多種模型與風格轉換的 AI 畫作平台，操作簡便。",
+            use_case: "AI 藝術創作、NFT 圖像、抽象風格實驗",
+            url: "https://creator.nightcafe.studio"
+          },
+          {
+            name: "Artbreeder",
+            image: "https://www.artbreeder.com/favicon.ico",
+            category: "圖像生成",
+            description: "透過滑桿調整參數來混合與創造角色、風景等圖像。",
+            use_case: "角色設計、概念草圖、創意探索",
+            url: "https://www.artbreeder.com"
+          },
+          {
+            name: "Deep Dream Generator",
+            image: "https://deepdreamgenerator.com/favicon.ico",
+            category: "圖像生成",
+            description: "Google Deep Dream 衍生平台，產生夢幻風格圖像。",
+            use_case: "風格化藝術、影像重製、創意展示",
+            url: "https://deepdreamgenerator.com"
+          },
+          {
+            name: "Dream by Wombo",
+            image: "https://www.wombo.art/favicon.ico",
+            category: "圖像生成",
+            description: "輸入文字即產生 AI 畫作，支援手機與網頁使用。",
+            use_case: "個人創作、社群內容、插圖靈感",
+            url: "https://www.wombo.art"
+          },
+          {
+            name: "Fotor AI Art Generator",
+            image: "https://www.fotor.com/favicon.ico",
+            category: "圖像生成",
+            description: "結合修圖與 AI 繪圖，適合創作社群風格圖像。",
+            use_case: "社群視覺圖、文章封面、視覺品牌",
+            url: "https://www.fotor.com/features/ai-image-generator/"
+          },
+          {
+            name: "Paint by Text (Hugging Face)",
+            image: "https://huggingface.co/favicon.ico",
+            category: "圖像生成",
+            description: "由文字直接對圖片局部修改或生成新畫面。",
+            use_case: "AI 編修、產品圖片優化、快速示意",
+            url: "https://huggingface.co/spaces/akhaliq/Paint-by-Text"
+          },
+          {
+            name: "Lumen5",
+            image: "https://lumen5.com/favicon.ico",
+            category: "影片生成",
+            description: "將部落格、文章轉換成動畫影片的 AI 工具，支援自動配音與配圖。",
+            use_case: "社群影片、內容行銷、教學摘要",
+            url: "https://lumen5.com"
+          },
+          {
+            name: "Animoto",
+            image: "https://animoto.com/favicon.ico",
+            category: "影片生成",
+            description: "簡易拖放式影片製作平台，適合商業用戶與教育推廣。",
+            use_case: "產品介紹、活動回顧、教學影片",
+            url: "https://animoto.com"
+          },
+          {
+            name: "Veed.io",
+            image: "https://www.veed.io/favicon.ico",
+            category: "影片生成",
+            description: "線上影片剪輯平台，支援字幕生成、音訊處理與模板套用。",
+            use_case: "YouTube 編輯、短影音製作、企業宣傳",
+            url: "https://www.veed.io"
+          },
+          {
+            name: "Pictory",
+            image: "https://pictory.ai/wp-content/uploads/2022/08/logo-new-font-TM.png",
+            category: "影片生成",
+            description: "將文字內容轉換為影片，支援 AI 旁白、字幕與鏡頭自動剪輯。",
+            use_case: "影片簡報、自媒體影片、課程製作",
+            url: "https://pictory.ai"
+          },
+          {
+            name: "Synthesia",
+            image: "https://www.synthesia.io/favicon-32x32.png",
+            category: "影片生成",
+            description: "生成虛擬人講解影片，支援多語言和自訂腳本。",
+            use_case: "企業內訓、課程教學、行銷簡報",
+            url: "https://www.synthesia.io"
+          },
+          {
+            name: "DeepBrain",
+            image: "https://www.deepbrain.io/favicon.ico",
+            category: "影片生成",
+            description: "快速生成 AI 虛擬人影片，適合新聞、課程、介紹短片。",
+            use_case: "新聞播報、網課講解、產品導覽",
+            url: "https://www.deepbrain.io"
+          },
+          {
+            name: "Colossyan",
+            image: "https://www.colossyan.com/favicon.ico",
+            category: "影片生成",
+            description: "AI 虛擬人影片生成工具，支援自訂角色與多語言輸出。",
+            use_case: "內訓影片、多國語系推廣、微課程",
+            url: "https://www.colossyan.com"
+          },
+          {
+            name: "Steve AI",
+            image: "https://www.steve.ai/favicon.ico",
+            category: "影片生成",
+            description: "根據文字腳本自動生成動畫或真人風格影片。",
+            use_case: "課程教學、行銷動畫、社群短片",
+            url: "https://www.steve.ai"
+          },
+          {
+            name: "Runway Gen-2",
+            image: "https://runwayml.com/favicon.ico",
+            category: "影片生成",
+            description: "Runway 推出的 AI 影片生成工具，支援文字到影片、風格轉換等。",
+            use_case: "概念動畫、創意視覺、短影片特效",
+            url: "https://runwayml.com"
+          },
+          {
+            name: "FlexClip",
+            image: "https://www.flexclip.com/favicon.ico",
+            category: "影片生成",
+            description: "支援 AI 文字轉影片、自動字幕與場景配樂的簡易編輯平台。",
+            use_case: "簡報影片、廣告內容、教學片段",
+            url: "https://www.flexclip.com"
+          },
+          {
+            name: "Kavout",
+            image: "https://www.kavout.com/favicon.ico",
+            category: "金融應用",
+            description: "運用 AI 模型評估股票潛力，提供量化分析與排名。",
+            use_case: "投資選股、量化分析、資產管理",
+            url: "https://www.kavout.com"
+          },
+          {
+            name: "Zeni",
+            image: "https://www.zeni.ai/favicon.ico",
+            category: "金融應用",
+            description: "為新創公司提供 AI 財務會計與即時報表管理。",
+            use_case: "會計自動化、財務報表、預算追蹤",
+            url: "https://www.zeni.ai"
+          },
+          {
+            name: "Upstart",
+            image: "https://www.upstart.com/favicon.ico",
+            category: "金融應用",
+            description: "使用 AI 評估信用風險並提供個人貸款服務。",
+            use_case: "信貸審核、自動評分、風險管理",
+            url: "https://www.upstart.com"
+          },
+          {
+            name: "AlphaSense",
+            image: "https://www.alpha-sense.com/favicon.ico",
+            category: "金融應用",
+            description: "AI 資訊分析引擎，整理來自財報、新聞與市場研究的洞察。",
+            use_case: "市場調查、財經研究、競爭分析",
+            url: "https://www.alpha-sense.com"
+          },
+          {
+            name: "Numerai",
+            image: "https://numer.ai/favicon.ico",
+            category: "金融應用",
+            description: "結合 AI 與加密貨幣概念的對沖基金，透過全球數據科學家建模。",
+            use_case: "量化交易、模型預測、去中心化對沖基金",
+            url: "https://numer.ai"
+          },
+          {
+            name: "Cleo",
+            image: "https://web.meetcleo.com/favicon.ico",
+            category: "金融應用",
+            description: "AI 理財助理，提供用戶花費追蹤、預算建議與聊天互動。",
+            use_case: "個人理財、記帳、理財教育",
+            url: "https://web.meetcleo.com"
+          },
+          {
+            name: "Yukon",
+            image: "https://yukonai.com/favicon.ico",
+            category: "金融應用",
+            description: "企業財務 AI 預測平台，整合 ERP 數據進行財務模擬與分析。",
+            use_case: "財務預測、企業分析、資金流規劃",
+            url: "https://yukonai.com"
+          },
+          {
+            name: "Zest AI",
+            image: "https://www.zest.ai/favicon.ico",
+            category: "金融應用",
+            description: "幫助金融機構建構信用風險模型，提高放貸效率與公平性。",
+            use_case: "信用風險評估、風控系統、金融科技",
+            url: "https://www.zest.ai"
+          },
+          {
+            name: "Delphia",
+            image: "https://delphia.com/favicon.ico",
+            category: "金融應用",
+            description: "將群體數據用於 AI 投資決策，主打數據驅動型資產管理。",
+            use_case: "社群投資、智能資產配置、預測市場趨勢",
+            url: "https://delphia.com"
+          },
+          {
+            name: "Trovata",
+            image: "https://trovata.io/favicon.ico",
+            category: "金融應用",
+            description: "自動化現金管理平台，支援多銀行整合與 AI 財務分析。",
+            use_case: "資金流視覺化、報表自動化、預測分析",
+            url: "https://trovata.io"
+          }
+  
+        ];
+  
+  
+        const toolList = document.getElementById("toolList");
+        const categoryFilter = document.getElementById("categoryFilter");
+        const searchInput = document.getElementById("searchInput");
+        const useCaseTags = document.getElementById("useCaseTags");
+        const clearBtn = document.getElementById("clearFilters");
+        let expanded = false; // 控制是否展開 tag
+        let expandBtn = null;
+  
+        // ➤ 統計與更新區域容器
+        const statsContainer = document.createElement("div");
+        statsContainer.style.marginBottom = "1rem";
+        useCaseTags.parentNode.insertBefore(statsContainer, useCaseTags.nextSibling);
+  
+        let activeTags = new Set();
+  
+        function getUniqueValues(array, extractor) {
+          const set = new Set();
+          array.forEach(item => {
+            extractor(item).split("、").forEach(v => set.add(v.trim()));
+          });
+          return [...set];
+        }
+  
+        function getLastUpdateDate() {
+          // 如果有新增 updated_at 欄位，可使用此函式自動取得
+          // 否則暫時以當前日期顯示
+          const today = new Date();
+          return `${today.getFullYear()}-${(today.getMonth()+1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+        }
+  
+        function populateFilters() {
+          const categories = getUniqueValues(tools, t => t.category);
+          categories.forEach(c => {
+            const option = document.createElement("option");
+            option.value = c;
+            option.textContent = c;
+            categoryFilter.appendChild(option);
+          });
+  
+          const useCases = getUniqueValues(tools, t => t.use_case);
+          useCaseTags.innerHTML = ""; // 清除現有 tags
+          expanded = false; // 預設收合
+  
+          useCases.forEach((u, index) => {
+            const tag = document.createElement("div");
+            tag.className = "tag";
+            tag.textContent = u;
+            tag.dataset.value = u;
+            if (index >= 10) tag.classList.add("hidden-tag");
+            tag.addEventListener("click", () => {
+              if (activeTags.has(u)) {
+                activeTags.delete(u);
+                tag.classList.remove("active");
+              } else {
+                activeTags.add(u);
+                tag.classList.add("active");
+              }
+              renderTools();
+            });
+            useCaseTags.appendChild(tag);
+          });
+  
+          // 展開/收合按鈕
+          if (useCases.length > 10) {
+            expandBtn = document.createElement("button");
+            expandBtn.textContent = "展開更多情境標籤 ⬇️";
+            expandBtn.className = "clear";
+            expandBtn.style.marginTop = "0.5rem";
+            expandBtn.addEventListener("click", toggleTags);
+            useCaseTags.appendChild(expandBtn);
+          }
+  
+          // 統計顯示
+          statsContainer.innerHTML = `🔎 共收錄 <strong>${tools.length}</strong> 個工具　
+          🕒 最近更新：<strong>${getLastUpdateDate()}</strong>`;
+        }
+  
+        function toggleTags() {
+          const hiddenTags = document.querySelectorAll(".hidden-tag");
+          hiddenTags.forEach(tag => {
+            tag.style.display = expanded ? "none" : "inline-flex";
+          });
+          expandBtn.textContent = expanded ? "更多情境 ⬇️" : "收合情境 ⬆️";
+          expanded = !expanded;
+        }
+  
+  
+        function renderTools() {
+          const category = categoryFilter.value;
+          const keyword = searchInput.value.toLowerCase();
+          const selectedUseCases = [...activeTags];
+  
+          const filtered = tools.filter(tool => {
+            const matchCategory = category ? tool.category === category : true;
+            const matchUseCase = selectedUseCases.length > 0 ?
+              selectedUseCases.some(uc => tool.use_case.includes(uc)) : true;
+            const matchKeyword = keyword
+              ? tool.name.toLowerCase().includes(keyword) ||
+                tool.description.toLowerCase().includes(keyword) ||
+                tool.use_case.toLowerCase().includes(keyword)
+              : true;
+            return matchCategory && matchUseCase && matchKeyword;
+          });
+  
+          toolList.innerHTML = filtered.map(tool => `
+            <div class="tool-card">
+              <img src="${tool.image}" alt="${tool.name}" 
+                   onerror="this.onerror=null; this.src='https://placehold.co/80x80?text=AI+Tool';"
+                   style="min-height: 80px;">
+              <h3>${tool.name}</h3>
+              <div class="tool-meta">分類：${tool.category}</div>
+              <p>${tool.description}</p>
+              <div class="use-case-tags">
+                <strong>適合情境：</strong>
+                ${tool.use_case
+                  .split("、")
+                  .map(tag =>
+                    `<span class="tag tool-tag" data-value="${tag.trim()}">${tag.trim()}</span>`
+                  ).join(" ")}
+              </div>
+              ${tool.url ? `<a href="${tool.url}" class="btn-link" target="_blank">前往網站</a>` : ""}
+            </div>
+          `).join("");
+  
+          // 每次渲染後重設 tag 為「收合」
+          expanded = false;
+          document.querySelectorAll(".hidden-tag").forEach(tag => {
+            tag.style.display = "none";
+          });
+          if (expandBtn) {
+            expandBtn.textContent = "更多情境 ⬇️";
+          }
+  
+          document.querySelectorAll(".tool-tag").forEach(tag => {
+            tag.addEventListener("click", () => {
+              const value = tag.dataset.value;
+              if (activeTags.has(value)) {
+                activeTags.delete(value);
+              } else {
+                activeTags.add(value);
+              }
+              // 更新篩選器上方的標籤樣式
+              document.querySelectorAll(".tag").forEach(t => {
+                if (activeTags.has(t.dataset.value)) {
+                  t.classList.add("active");
+                } else {
+                  t.classList.remove("active");
+                }
+              });
+              renderTools();
+            });
+          });
+  
+        }
+  
+  
+  
+        clearBtn.addEventListener("click", () => {
+          categoryFilter.value = "";
+          searchInput.value = "";
+          activeTags.clear();
+          document.querySelectorAll(".tag.active").forEach(tag => tag.classList.remove("active"));
+          renderTools();
+        });
+  
+        categoryFilter.addEventListener("change", renderTools);
+        searchInput.addEventListener("input", renderTools);
+  
+        populateFilters();
+        renderTools();
+  
+      });
+    </script>
+  <body>
+      
+      </body>

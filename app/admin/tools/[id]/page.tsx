@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { MultiImageUpload } from "@/components/ui/multi-image-upload";
+import { FileUpload } from "@/components/ui/file-upload";
 import {
   Card,
   CardContent,
 } from "@/components/ui/card";
-import { ChevronLeft, Save, Eye, Image as ImageIcon, Loader2, Play, Globe, Download, CheckCircle2, X } from "lucide-react";
+import { ChevronLeft, Save, Eye, Image as ImageIcon, Loader2, Play, Globe, Download, CheckCircle2, X, Clock, Users } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -32,7 +35,9 @@ export default function AdminToolEditPage({ params }: { params: { id: string } }
     download_url: "",
     video_url: "",
     images: [] as string[],
-    features: [] as string[]
+    features: [] as string[],
+    access_count: 0,
+    updated_at: ""
   });
 
   const [featureInput, setFeatureInput] = useState("");
@@ -70,7 +75,9 @@ export default function AdminToolEditPage({ params }: { params: { id: string } }
         download_url: data.download_url || "",
         video_url: data.video_url || "",
         images: data.images || [],
-        features: data.features || []
+        features: data.features || [],
+        access_count: data.access_count || 0,
+        updated_at: data.updated_at || data.created_at
       });
     }
     setLoading(false);
@@ -249,28 +256,23 @@ export default function AdminToolEditPage({ params }: { params: { id: string } }
           <Card className="p-6 space-y-6">
             <h3 className="font-bold text-slate-900 border-b pb-4">多圖展示 (Images)</h3>
             <div className="space-y-4">
-              <div className="grid grid-cols-4 gap-4">
-                {formData.images.map((url, idx) => (
-                  <div key={idx} className="relative aspect-video rounded-lg border overflow-hidden group">
-                    <img src={url} className="w-full h-full object-cover" alt="Tool preview" />
-                    <button 
-                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeImageUrl(idx)}
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input 
-                  className="flex-grow px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none" 
-                  placeholder="輸入圖片網址..."
-                  value={imageUrlInput}
-                  onChange={(e) => setImageUrlInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && addImageUrl()}
-                />
-                <Button variant="outline" size="sm" onClick={addImageUrl}>加入</Button>
+              <MultiImageUpload 
+                value={formData.images}
+                onChange={(urls) => setFormData({ ...formData, images: urls })}
+                folder="tools"
+              />
+              <div className="pt-4 border-t border-slate-100">
+                <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block">或是手動輸入圖片網址</label>
+                <div className="flex gap-2">
+                  <input 
+                    className="flex-grow px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500" 
+                    placeholder="輸入圖片網址..."
+                    value={imageUrlInput}
+                    onChange={(e) => setImageUrlInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addImageUrl()}
+                  />
+                  <Button variant="outline" size="sm" onClick={addImageUrl}>加入</Button>
+                </div>
               </div>
             </div>
           </Card>
@@ -279,6 +281,22 @@ export default function AdminToolEditPage({ params }: { params: { id: string } }
         <aside className="space-y-6">
           <Card className="p-6 space-y-6">
             <div className="space-y-4">
+              {!isNew && (
+                <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-100">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                      <Users size={10} /> 使用人數
+                    </p>
+                    <p className="text-lg font-black text-slate-900">{formData.access_count}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                      <Clock size={10} /> 最後更新
+                    </p>
+                    <p className="text-xs font-bold text-slate-900">{formData.updated_at ? formatDate(formData.updated_at) : '尚未儲存'}</p>
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase">工具類型</label>
                 <select 
@@ -334,12 +352,21 @@ export default function AdminToolEditPage({ params }: { params: { id: string } }
               <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
                 <Download size={12} /> 下載連結 (Download)
               </label>
-              <input 
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs outline-none font-mono" 
-                placeholder="https://..."
+              <FileUpload 
                 value={formData.download_url}
-                onChange={(e) => setFormData({ ...formData, download_url: e.target.value })}
+                onChange={(url) => setFormData({ ...formData, download_url: url })}
+                folder="tools-files"
+                label="壓縮檔 (ZIP, RAR)"
               />
+              <div className="pt-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">或是直接輸入下載網址</label>
+                <input 
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs outline-none font-mono focus:border-blue-500" 
+                  placeholder="https://..."
+                  value={formData.download_url}
+                  onChange={(e) => setFormData({ ...formData, download_url: e.target.value })}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
