@@ -8,14 +8,76 @@ import {
   CardTitle,
   CardContent,
 } from "@/components/ui/card";
-import { Trash2, ShoppingBag, ArrowLeft } from "lucide-react";
+import { Trash2, ShoppingBag, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 import { useCart } from "@/components/providers/cart-provider";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
 export default function CartPage() {
-  const { items, removeFromCart, totalAmount } = useCart();
+  const { items, addToCart, removeFromCart, totalAmount } = useCart();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [isProcessingAdd, setIsProcessingAdd] = useState(false);
+
+  useEffect(() => {
+    const slugToAdd = searchParams.get("add");
+    const planIndex = parseInt(searchParams.get("plan") || "0");
+
+    if (slugToAdd) {
+      handleAutoAdd(slugToAdd, planIndex);
+    }
+  }, [searchParams]);
+
+  const handleAutoAdd = async (slug: string, planIdx: number) => {
+    // 檢查購物車中是否已有此項，避免重複處理
+    setIsProcessingAdd(true);
+    
+    try {
+      const { data: course, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+
+      if (error || !course) {
+        console.error("Auto-add error:", error);
+      } else {
+        const pricingOptions = Array.isArray(course.pricing_options) ? course.pricing_options : [];
+        const currentPricing = pricingOptions[planIdx];
+        
+        const itemId = pricingOptions.length > 0 ? `${course.id}-${planIdx}` : course.id;
+        
+        // 檢查購物車中是否已經存在
+        if (!items.find(i => i.id === itemId)) {
+          const item = {
+            id: itemId,
+            title: course.title,
+            price: currentPricing?.price !== undefined ? currentPricing.price : (course.discount_price || 0),
+            original_price: currentPricing?.original_price !== undefined ? currentPricing.original_price : (course.original_price || 0),
+            image_url: course.image_url,
+            slug: slug,
+            level: course.level,
+            pricing_label: currentPricing?.label || "標準入學方案"
+          };
+          addToCart(item);
+        }
+      }
+    } catch (err) {
+      console.error("Unexpected error in auto-add:", err);
+    } finally {
+      setIsProcessingAdd(false);
+      // 清除網址參數
+      const newParams = new URLSearchParams(searchParams.toString());
+      newParams.delete("add");
+      newParams.delete("plan");
+      const queryString = newParams.toString();
+      router.replace(`/cart${queryString ? `?${queryString}` : ''}`);
+    }
+  };
 
   return (
     <div className="relative bg-white min-h-screen flex flex-col">
@@ -34,7 +96,14 @@ export default function CartPage() {
 
           <div className="grid lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2 space-y-6">
-              {items.map((item) => (
+              {isProcessingAdd && (
+                <div className="flex flex-col items-center justify-center py-20 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-100">
+                  <Loader2 className="animate-spin text-blue-600 mb-4" size={32} />
+                  <p className="font-bold text-slate-500">正在為您準備課程...</p>
+                </div>
+              )}
+              
+              {!isProcessingAdd && items.map((item) => (
                 <Card key={item.id} className="overflow-hidden border-slate-100 shadow-sm hover:shadow-md transition-all">
                   <div className="flex flex-col sm:flex-row p-6 gap-6">
                     <div className="w-full sm:w-40 h-28 flex-shrink-0 bg-slate-50 rounded-xl overflow-hidden border border-slate-100">

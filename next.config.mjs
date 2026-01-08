@@ -9,6 +9,10 @@ const nextConfig = {
         // 實際上讀取的檔案路徑
         destination: '/demo/ai-tool-library/index.html',
       },
+      {
+        source: '/vibe-coding-course',
+        destination: '/landings/vibe-coding/index.html',
+      },
     ];
   },
 };
