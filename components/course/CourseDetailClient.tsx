@@ -13,7 +13,7 @@ import {
   Loader2, MessageSquare, BookOpen, Clock, BarChart, 
   Users, Star, Megaphone, ChevronDown, PlayCircle, 
   Info, Lock, Download, FileText, Globe, MonitorPlay,
-  CheckCircle2, ArrowRight
+  CheckCircle2, ArrowRight, GraduationCap
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -401,6 +401,32 @@ export default function CourseDetailClient({
           </div>
         </div>
       </section>
+
+      {/* 已購買使用者的進入教室提示 */}
+      {hasPurchased && (
+        <div className="bg-blue-600 w-full py-4 sticky top-16 z-40 shadow-xl">
+          <div className="container-base flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-white">
+              <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
+                <GraduationCap className="text-white" size={24} />
+              </div>
+              <div>
+                <p className="font-black text-lg leading-tight">您已擁有此課程</p>
+                <p className="text-blue-100 text-xs font-bold">隨時隨地，立即開始您的學習之旅</p>
+              </div>
+            </div>
+            <Button 
+              size="lg" 
+              className="w-full sm:w-auto bg-white text-blue-600 hover:bg-blue-50 font-black rounded-xl px-10 h-12 shadow-lg transition-transform hover:scale-105 active:scale-95"
+              asChild
+            >
+              <Link href={`/courses/${slug}/learn`} className="flex items-center gap-2">
+                進入教室學習 <ArrowRight size={18} />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
 
       <main className="container-base py-12 lg:py-16">
         <div className="grid lg:grid-cols-[1fr_380px] gap-12 items-start text-left">

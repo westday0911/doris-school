@@ -28,9 +28,17 @@ import { supabase } from "@/lib/supabase";
 
 export default function CheckoutPage() {
   const { items, totalAmount } = useCart();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+
+  // Enforce login
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push(`/auth/login?redirect=/checkout`);
+    }
+  }, [user, authLoading, router]);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",

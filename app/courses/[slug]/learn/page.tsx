@@ -15,38 +15,51 @@ export default function CourseLearnPage({ params }: { params: { slug: string } }
 
   useEffect(() => {
     async function initClassroom() {
+      // 0. 解碼 Slug
+      const decodedSlug = decodeURIComponent(params.slug);
+      
       // 1. 獲取使用者 session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        router.push(`/auth/login?returnTo=/courses/${params.slug}/learn`);
+        router.push(`/auth/login?redirect=/courses/${params.slug}/learn`);
         return;
       }
       setUser(session.user);
 
       // 2. 獲取課程資料
-      const { data: courseData } = await supabase
+      const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .select('*')
-        .eq('slug', params.slug)
-        .single();
+        .eq('slug', decodedSlug)
+        .maybeSingle();
+
+      if (courseError) {
+        console.error("Course fetch error:", courseError);
+      }
 
       if (!courseData) {
+        console.error("Course not found for slug:", decodedSlug);
         notFound();
         return;
       }
       setCourse(courseData);
 
       // 3. 檢查購買狀態
-      const { data: purchase } = await supabase
+      const { data: purchase, error: purchaseError } = await supabase
         .from('user_courses')
         .select('id')
         .eq('user_id', session.user.id)
         .eq('course_id', courseData.id)
-        .single();
+        .maybeSingle();
+
+      if (purchaseError) {
+        console.error("Purchase check error:", purchaseError);
+      }
 
       if (!purchase) {
-        router.push(`/courses/${params.slug}`);
+        console.warn("No purchase found for user on this course");
+        router.push(`/courses/${decodedSlug}`);
         return;
       }
 

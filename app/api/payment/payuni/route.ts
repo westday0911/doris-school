@@ -36,9 +36,25 @@ export async function POST(req: Request) {
       if (user) userId = user.id;
     }
 
+    if (!userId) {
+      return NextResponse.json({ success: false, message: "請先登入再進行結帳" }, { status: 401 });
+    }
+
     // 1. 在資料庫建立訂單 (使用 supabaseAdmin)
     const orderNo = `DORIS${Date.now()}`;
     const itemsSummary = items.map((i: any) => i.title).join(", ");
+
+    // 關鍵修復：清理 items_data 中的 ID 格式，移除 "-0", "-1" 等後綴
+    // 確保 Trigger 在將 ID 轉型為 UUID 時不會報錯
+    const cleanedItems = items.map((item: any) => {
+      if (typeof item.id === 'string' && item.id.includes('-')) {
+        const uuidMatch = item.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+        if (uuidMatch) {
+          return { ...item, id: uuidMatch[0] };
+        }
+      }
+      return item;
+    });
 
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
@@ -52,7 +68,7 @@ export async function POST(req: Request) {
         customer_name: customer.name,
         customer_email: customer.email,
         customer_phone: customer.phone,
-        items_data: items
+        items_data: cleanedItems // 使用清理過的資料
       }])
       .select()
       .single();

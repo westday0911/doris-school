@@ -386,7 +386,7 @@ export default function MemberDashboard() {
                             </div>
                           </CardHeader>
                           <CardContent className="px-6 pb-6">
-                            <Link href={`/courses/${uc.courses?.slug}`}>
+                            <Link href={`/courses/${uc.courses?.slug}/learn`}>
                               <Button variant="default" className="w-full font-bold bg-slate-950 rounded-xl">繼續學習</Button>
                             </Link>
                           </CardContent>

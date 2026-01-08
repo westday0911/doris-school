@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { supabase } from "@/lib/supabase";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "儀表板", href: "/admin/dashboard" },
