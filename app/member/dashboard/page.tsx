@@ -10,7 +10,7 @@ import {
   CardTitle,
   CardContent,
 } from "@/components/ui/card";
-import { BookOpen, CreditCard, User, LogOut, Loader2, ChevronRight, Settings, Camera, AlertCircle } from "lucide-react";
+import { BookOpen, CreditCard, User, LogOut, Loader2, ChevronRight, Settings, Camera, AlertCircle, ArrowUpDown } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -25,6 +25,7 @@ export default function MemberDashboard() {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<DashboardSection>("courses");
   const [profile, setProfile] = useState<any>(null);
+  const [courseSortOrder, setCourseSortOrder] = useState<'newest' | 'oldest' | 'progress-desc' | 'progress-asc' | 'alphabetical'>('newest');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -338,9 +339,26 @@ export default function MemberDashboard() {
             <div className="space-y-8">
               {activeSection === "courses" && (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-black text-slate-950">我的課程</h1>
-                    <span className="text-sm text-slate-400 font-bold">{userCourses.length} 門課程</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <h1 className="text-2xl font-black text-slate-950">我的課程</h1>
+                      <span className="text-sm text-slate-400 font-bold">{userCourses.length} 門課程</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                      <ArrowUpDown size={14} className="text-slate-400" />
+                      <select 
+                        value={courseSortOrder}
+                        onChange={(e) => setCourseSortOrder(e.target.value as any)}
+                        className="bg-transparent text-xs font-bold text-slate-600 outline-none cursor-pointer hover:text-slate-950 transition-colors"
+                      >
+                        <option value="newest">最近購買</option>
+                        <option value="oldest">最早購買</option>
+                        <option value="progress-desc">進度 (高至低)</option>
+                        <option value="progress-asc">進度 (低至高)</option>
+                        <option value="alphabetical">課程名稱 (A-Z)</option>
+                      </select>
+                    </div>
                   </div>
 
                   {loadingData ? (
@@ -360,7 +378,14 @@ export default function MemberDashboard() {
                     </div>
                   ) : (
                     <div className="grid md:grid-cols-2 gap-6">
-                      {userCourses.map((uc) => (
+                      {[...userCourses].sort((a, b) => {
+                        if (courseSortOrder === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                        if (courseSortOrder === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+                        if (courseSortOrder === 'progress-desc') return b.progress - a.progress;
+                        if (courseSortOrder === 'progress-asc') return a.progress - b.progress;
+                        if (courseSortOrder === 'alphabetical') return (a.courses?.title || '').localeCompare(b.courses?.title || '');
+                        return 0;
+                      }).map((uc) => (
                         <Card key={uc.id} className="overflow-hidden border-slate-200 rounded-3xl hover:shadow-xl transition-all duration-500 group">
                           <div className="aspect-video relative overflow-hidden">
                             <img 

@@ -10,11 +10,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { BrowserMockup } from "@/components/BrowserMockup";
+import { TechBackground } from "@/components/TechBackground";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/components/providers/auth-provider";
 import { formatDate } from "@/lib/utils";
+import { Brain, Rocket, Zap, Target, Layers, Cpu } from "lucide-react";
 
 export default function HomeClient({ 
   initialCourses, 
@@ -38,37 +40,23 @@ export default function HomeClient({
     image_url: "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=800&h=1000&fit=crop&crop=center"
   };
 
-  const testimonials = [
-    {
-      name: "陳雅婷 · 產品經理",
-      quote: "課程內容非常實戰，讓我把 AI 變成工作流程的一部分。",
-    },
-    {
-      name: "黃志明 · 創業者",
-      quote: "Doris 的拆解方式清楚又有邏輯，團隊效率提升非常明顯。",
-    },
-    {
-      name: "李小芸 · 行銷專家",
-      quote: "我第一次感受到 AI 學習不再是冷冰冰的技術，而是解決問題的方法。",
-    },
-  ];
-
   return (
     <div className="relative">
       <Navbar />
 
       <main>
         {/* Hero Section */}
-        <section className="section-spacing bg-white overflow-visible min-h-[600px] lg:min-h-[700px] pb-32 lg:pb-40" id="hero">
+        <section className="section-spacing bg-white overflow-visible min-h-[600px] lg:min-h-[700px] pb-32 lg:pb-40 relative" id="hero">
+          <TechBackground />
           <div className="container-base relative">
             <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr]">
               <div className="space-y-6 relative z-10">
                 <Badge variant="muted">用 AI 和科技 解決問題</Badge>
                 <div className="space-y-4">
-                  <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight tracking-tighter text-slate-950">
+                  <h1 className="text-5xl sm:text-6xl lg:text-5xl font-bold leading-tight tracking-tighter text-slate-950">
                     <span className="gradient-text">學習 AI</span>
                     <span className="block mt-2 gradient-text-blue text-4xl sm:text-5xl lg:text-6xl">
-                    把想法變成真正跑得動的產品與流程
+                    把想法變成真正開始營運的產品與流程
                     </span>
                   </h1>
                   <p className="text-lg sm:text-xl text-slate-600 font-medium max-w-[600px]">
@@ -80,26 +68,21 @@ export default function HomeClient({
                   <Button size="lg" className="shadow-md" asChild>
                     <Link href="/courses">探索最新課程</Link>
                   </Button>
-                  {!loading && !user && (
-                    <>
-                      <Button variant="outline" size="lg" asChild>
-                        <Link href="/auth/login">登入系統</Link>
-                      </Button>
-                      <Button variant="secondary" size="lg" className="bg-blue-50 text-blue-600 hover:bg-blue-100 border-none" asChild>
-                        <Link href="/auth/register">立即加入</Link>
-                      </Button>
-                    </>
-                  )}
-                  {user && (
-                    <Button variant="outline" size="lg" asChild>
-                      <Link href="/member/dashboard">進入會員中心</Link>
-                    </Button>
-                  )}
+                  
                 </div>
-                <div className="flex items-center gap-6 text-sm font-medium text-slate-500">
-                  <span>50+ 企業合作</span>
-                  <span>1200+ 學員</span>
-                  <span>8 週實戰陪跑</span>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-bold text-slate-500">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                    <span>Vibe Coding 實戰導向</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
+                    <span>AI 自動化工作流</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-sky-600 animate-pulse" />
+                    <span>科技新創產品化</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -115,9 +98,6 @@ export default function HomeClient({
                 ]}
                 autoSlideInterval={3000}
               />
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-slate-200 border border-slate-300 shadow-sm z-10">
-                <div className="absolute inset-0 rounded-full bg-slate-300 animate-ping"></div>
-              </div>
             </div>
 
             {/* 年輕人圖片 */}
@@ -127,91 +107,106 @@ export default function HomeClient({
                 alt="年輕人"
                 className="w-full h-auto drop-shadow-2xl hover:scale-105 transition-all duration-700"
               />
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-slate-200 border border-slate-300 shadow-sm z-10">
-                <div className="absolute inset-0 rounded-full bg-slate-300 animate-ping"></div>
-              </div>
             </div>
 
-            {/* 連接線 SVG */}
-            <div className="absolute inset-0 pointer-events-none z-[15]" style={{ overflow: 'hidden' }}>
-              <svg 
-                className="absolute w-full h-full"
-                style={{ height: '100%', width: '100%', overflow: 'visible' }}
-              >
-                <defs>
-                  <linearGradient id="connectionLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#94a3b8" stopOpacity="0.3" />
-                    <stop offset="50%" stopColor="#cbd5e1" stopOpacity="0.6" />
-                    <stop offset="100%" stopColor="#94a3b8" stopOpacity="0.3" />
-                  </linearGradient>
-                  <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-                    <polygon points="0 0, 10 3, 0 6" fill="#cbd5e1" opacity="0.6" />
-                  </marker>
-                </defs>
-                <path
-                  d="M 50% 92% Q 65% 70%, 85% 25%"
-                  stroke="url(#connectionLineGradient)"
-                  strokeWidth="2"
-                  fill="none"
-                  strokeDasharray="8,8"
-                  markerEnd="url(#arrowhead)"
-                  className="connection-line"
-                />
-              </svg>
-            </div>
+            
           </div>
         </section>
 
-        {/* Latest Course Section */}
-        <section className="section-spacing bg-slate-50/30 overflow-hidden" id="latest">
-          <div className="container-base">
-            <div className="grid gap-12 lg:grid-cols-[1fr_0.8fr] items-center">
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Badge variant="default" className="bg-blue-600 text-white border-0">NEW</Badge>
-                    <span className="text-sm font-bold tracking-widest uppercase text-blue-600">最新課程發佈</span>
+        {/* Latest Course Section - Vibe Coding Redesign */}
+        <section className="py-24 sm:py-32 relative overflow-hidden bg-slate-950" id="latest">
+          {/* Background Decorative Elements */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+            <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[60%] rounded-full bg-blue-600/20 blur-[120px]" />
+            <div className="absolute -bottom-[20%] -right-[10%] w-[50%] h-[60%] rounded-full bg-indigo-600/20 blur-[120px]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]" />
+          </div>
+
+          <div className="container-base relative z-10">
+            <div className="grid gap-16 lg:grid-cols-[1fr_0.8fr] items-center">
+              <div className="space-y-10">
+                <div className="space-y-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 backdrop-blur-md">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    <span className="text-xs font-bold tracking-[0.2em] uppercase text-blue-400">Vibe Coding Era</span>
                   </div>
-                  <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tighter text-slate-950 leading-tight">
-                    {latestCourse.title}
-                  </h2>
-                  <p className="text-lg text-slate-600 leading-relaxed max-w-[600px]">
-                    {latestCourse.description}
-                  </p>
+                  
+                  <div className="space-y-4">
+                    <h2 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter text-white leading-[1.1]">
+                      {latestCourse.title.split(' ')[0]} <br />
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+                        {latestCourse.title.split(' ').slice(1).join(' ')}
+                      </span>
+                    </h2>
+                    <p className="text-lg sm:text-xl text-slate-400 leading-relaxed max-w-[540px] font-medium">
+                      不只是寫程式，而是與 AI 共舞。掌握這套「直覺驅動」的開發模式，讓你的創意在瞬間轉化為產品。
+                    </p>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider">開課日期</h4>
-                    <p className="text-lg font-bold text-slate-900">2025 春季招生</p>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider">適合對象</h4>
-                    <p className="text-lg font-bold text-slate-900">{latestCourse.level}</p>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                  {[
+                    { label: "從「做出畫面」到「完成系統」", desc: "Vibe Coding 讓開始變得很快，但真正能用的完整系統是不一樣的，我們教你如何真正完成前端到後端完整體驗。" },
+                    { label: "使用 Cursor 讓開發速度 x10", desc: "深度運用 Cursor AI 輔助，將開發效率提升 10 倍以上，讓技術不再是創意實現的阻礙。" },
+                    { label: "無痛跨越技術門檻", desc: "無論你是沒有程式基礎、或是純設計師，都能體驗親手從零完成一個完整系統的成就感。" },
+                    { label: "商業購物系統實戰", desc: "最終會做出一套商業購物系統，包含完整的資料庫、金流與前後端串接實務。" }
+                  ].map((item) => (
+                    <div key={item.label} className="group flex gap-4">
+                      <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-blue-500/20 group-hover:border-blue-500/30 transition-all duration-500">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-bold text-white tracking-wide">{item.label}</h4>
+                        <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="pt-4">
-                  <Link href={`/courses/${latestCourse.slug}`}>
-                    <Button size="lg" className="h-14 px-8 text-lg font-bold bg-slate-950 text-white hover:bg-slate-800 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1">
-                      立即報名課程
+                <div className="flex flex-col sm:flex-row items-center gap-6 pt-4">
+                  <Link href={`/courses/${latestCourse.slug}`} className="w-full sm:w-auto">
+                    <Button size="lg" className="w-full h-16 px-10 text-lg font-bold bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-[0_0_40px_rgba(37,99,235,0.3)] hover:shadow-[0_0_60px_rgba(37,99,235,0.5)] border-0 rounded-2xl">
+                      立即預購
                     </Button>
                   </Link>
+                  
                 </div>
               </div>
 
               <div className="relative group">
-                <div className="absolute -inset-4 bg-gradient-to-tr from-blue-500/10 to-indigo-500/10 rounded-2xl blur-2xl group-hover:opacity-75 transition-opacity" />
-                <Card className="relative border-slate-200 shadow-2xl overflow-hidden rounded-2xl bg-white">
-                  <div className="aspect-[4/5] overflow-hidden">
-                    <img
-                      src={latestCourse.image_url || "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=800&h=1000&fit=crop&crop=center"}
-                      alt={latestCourse.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
+                {/* Image Glass Card */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                <div className="relative aspect-[4/5] sm:aspect-square lg:aspect-[4/5] overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900 shadow-2xl">
+                  <img
+                    src={latestCourse.image_url || "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=800&h=1000&fit=crop&crop=center"}
+                    alt={latestCourse.title}
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                  />
+                  
+                  {/* Floating UI Elements */}
+                  <div className="absolute top-6 right-6 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl animate-bounce-slow">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <span className="text-xs font-bold text-white">早鳥預購中</span>
+                    </div>
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60" />
-                </Card>
+
+                  <div className="absolute bottom-6 left-6 right-6 p-6 rounded-2xl bg-slate-950/40 backdrop-blur-xl border border-white/10 shadow-2xl">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">目前售價</p>
+                        <p className="text-2xl font-black text-white">NT$ {latestCourse.discount_price?.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">開課日期</p>
+                        <p className="text-sm font-bold text-white">2025.03.1</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Vibe Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-40 group-hover:opacity-20 transition-opacity" />
+                </div>
               </div>
             </div>
           </div>
@@ -286,41 +281,44 @@ export default function HomeClient({
             <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
               <div className="relative w-full lg:w-1/2">
                 <div className="absolute -top-12 -left-12 w-64 h-64 bg-blue-50 rounded-full blur-3xl opacity-60" />
-                <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-slate-100 rounded-full blur-3xl opacity-60" />
+                <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-60" />
                 <img
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&h=1000&fit=crop&crop=face"
+                  src="/avatar.png"
                   alt="Founder Doris"
-                  className="relative z-10 w-full h-auto rounded-2xl shadow-2xl grayscale-[0.2] hover:grayscale-0 transition-all duration-700"
+                  className="relative z-10 w-full h-auto rounded-[2.5rem] shadow-2xl hover:scale-[1.02] transition-all duration-700"
                 />
               </div>
               
               <div className="w-full lg:w-1/2 space-y-10 relative z-10">
                 <div className="space-y-6">
-                  <div className="space-y-2">
-                    <span className="text-blue-600 font-bold tracking-[0.2em] text-xs uppercase">Founder of Doris AI Academy</span>
+                  <div className="space-y-3">
+                    <Badge variant="muted" className="bg-blue-50 text-blue-600 border-0 px-3 py-1">我也是從「自己摸索」一路走過來的</Badge>
                     <h2 className="text-5xl font-black tracking-tight text-slate-950">
-                      我是 Doris
+                      Hi, 我是 Doris
                     </h2>
                   </div>
-                  <p className="text-xl text-slate-600 leading-relaxed font-medium">
-                    我教的不是 AI 技術，而是如何成為那個 <span className="text-slate-950 underline decoration-blue-500 underline-offset-8 decoration-4">懂的運用 AI 的人</span>。
+                  <p className="text-xl text-slate-600 leading-relaxed font-medium italic border-l-4 border-blue-500 pl-6">
+                    「學習開發的路上我不是一路都很順的人。很多你現在卡住的地方，我其實都卡過。」
                   </p>
-                  <div className="space-y-4 text-slate-500 leading-relaxed">
+                  <div className="space-y-6 text-slate-600 leading-relaxed">
                     <p>
-                      擁有超過 10 年的數位轉型經驗，近年專注於生成式 AI 的商業落地應用。我深信 AI 不應只是工程師的玩具，而是每個人都能掌握的效率武器。
+                      我經營一個 YouTube 頻道，分享開發、AI 與產品實作的經驗；也曾獨自完成一個線上開店平台<strong>『海浪商店 HiinPay』</strong>，從前台、後台、會員、金流到部署，所有功能都是自己一個人完成。
                     </p>
                     <p>
-                      曾協助超過 50 家企業導入 AI 工作流，並透過結構化的教學方式，帶領 1200+ 名學員從零建立自己的 AI 能力。
+                      過去我也開過兩門線上課程，慢慢發現：大家真正需要的，不是更多語法，而是<strong>「怎麼把東西完成」</strong>。
+                    </p>
+                    <p className="font-bold text-slate-950">
+                      這個學院，目的就是希望我把自己一路走來的做法和經驗，整理成一套可以重複使用的流程，分享給和我有同樣夢想，喜歡十座產品、想要嘗試一人創業或是想要親手做出最符合需求的系統的人們，陪你少走一點冤枉路。
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-12 gap-y-8">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
                   {[
-                    { label: "實戰企業", val: "50+" },
-                    { label: "授課學員", val: "1200+" },
-                    { label: "顧問時數", val: "2000+" },
-                    { label: "專案落地", val: "100+" },
+                    { label: "專案開發", val: "300+" },
+                    { label: "服務客戶", val: "1000+" },
+                    { label: "創造價值", val: "20億+" },
+                    { label: "實戰經驗", val: "10年+" },
                   ].map((stat) => (
                     <div key={stat.label} className="space-y-1">
                       <p className="text-3xl font-black text-slate-950 tracking-tighter">{stat.val}</p>
@@ -329,11 +327,11 @@ export default function HomeClient({
                   ))}
                 </div>
 
-                <div className="flex items-center gap-8 pt-4">
-                  <Button className="rounded-full h-14 px-10 shadow-xl hover:shadow-2xl transition-all">合作洽談</Button>
-                  <Link href="/blog" className="text-sm font-bold text-slate-950 hover:text-blue-600 transition-colors border-b-2 border-slate-950 hover:border-blue-600 pb-1">
-                    個人專欄 →
-                  </Link>
+                <div className="flex flex-col sm:flex-row items-center gap-6 pt-4">
+                  <Button className="w-full sm:w-auto rounded-2xl h-14 px-10 shadow-xl hover:shadow-2xl transition-all bg-slate-950 text-white">了解更多關於我</Button>
+                  <a href="https://www.youtube.com/@DorisALiao" target="_blank" rel="noopener noreferrer">
+                    YouTube 頻道 →
+                  </a>
                 </div>
               </div>
             </div>
@@ -394,73 +392,59 @@ export default function HomeClient({
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="section-spacing bg-white" id="features">
+        {/* Features Section - Redesigned for Premium Look */}
+        <section className="py-24 sm:py-32 bg-slate-50/50" id="features">
           <div className="container-base">
-            <div className="max-w-[800px] mx-auto text-center space-y-4 mb-16">
-              <Badge variant="muted" className="rounded-md">我們的核心價值</Badge>
-              <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-950 leading-tight">
-                不只是學工具，更是掌握 <span className="text-blue-600">不被取代的 AI 思維</span>
+            <div className="max-w-[800px] mx-auto text-center space-y-6 mb-20">
+              <Badge variant="muted" className="rounded-full px-4 py-1 bg-white border-slate-200 text-slate-600 shadow-sm uppercase tracking-widest">Core Values</Badge>
+              <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-950 leading-tight">
+                掌握 <span className="text-blue-600">AI 時代</span> 的生存法則
               </h2>
-              <p className="text-slate-500 text-lg leading-relaxed">
-                技術會變，但解決問題的能力不會。我們教你如何運用最新科技，將腦中的想法轉化為真實跑得動的產品。
+              <p className="text-slate-500 text-lg leading-relaxed max-w-[600px] mx-auto">
+                技術框架會不斷演進，唯有「解決問題的邏輯」與「與 AI 協作的能力」才是你最核心的競爭力。
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 {
-                  title: "持續進化的 AI 思維",
-                  desc: "超越單一工具的操作，教你如何拆解問題，建立一套能適應任何 AI 演進的邏輯底層。",
-                  icon: "🧠"
+                  title: "應用導向的學習歷程",
+                  desc: "拒絕純理論灌輸。從真實場景出發，將每個知識點直接對接到實際應用，讓學習效果立即被看見。",
+                  icon: <Target className="w-8 h-8 text-blue-600" />,
+                  bg: "bg-blue-50"
                 },
                 {
-                  title: "從的想法到產品",
-                  desc: "不只是 Demo。我們專注於實戰，教你如何串接不同技術，將創意真正落地成為可用的工作流或產品。",
-                  icon: "🚀"
+                  title: "極大化 AI 資源效率",
+                  desc: "教你如何整合並自動化各種 AI 資源，不僅是學會工具，更是學會如何精準達成商業目標。",
+                  icon: <Layers className="w-8 h-8 text-indigo-600" />,
+                  bg: "bg-indigo-50"
                 },
                 {
-                  title: "掌握最新科技趨勢",
-                  desc: "緊跟 Vibe Coding 等最新開發模式，讓你在 AI 浪潮中始終站在技術應用的最前線。",
-                  icon: "⚡"
+                  title: "實戰案例深度分享",
+                  desc: "活用 AI 及技術知識，結合講師多年開發與創業經驗，拆解豐富的實作案例，帶你避開所有地雷。",
+                  icon: <Rocket className="w-8 h-8 text-amber-500" />,
+                  bg: "bg-amber-50"
                 }
               ].map((feature) => (
-                <div key={feature.title} className="space-y-4 p-8 rounded-2xl border border-slate-100 bg-slate-50/30 hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-500">
-                  <div className="text-4xl">{feature.icon}</div>
-                  <h3 className="text-xl font-bold text-slate-950">{feature.title}</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed">{feature.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        <section className="section-spacing bg-white" id="testimonials">
-          <div className="container-base space-y-12">
-            <div className="text-center space-y-4">
-              <Badge variant="muted">學員見證</Badge>
-              <h2 className="text-3xl font-bold tracking-tight text-slate-950">
-                來自學員的真實回饋
-              </h2>
-            </div>
-            <div className="grid gap-8 md:grid-cols-3">
-              {testimonials.map((testimonial, index) => (
-                <Card key={testimonial.name} className="border-slate-200 shadow-sm pt-8">
-                  <div className="mx-auto -mt-14 h-12 w-12 overflow-hidden rounded-full border-2 border-white shadow-md">
-                    <img
-                      src={`https://images.unsplash.com/photo-${index === 0 ? '1494790108755-2616b612b786' : index === 1 ? '1472099645785-5658abf4ff4e' : '1438761681033-6461ffad8d80'}?w=100&h=100&fit=crop&crop=face`}
-                      alt={testimonial.name}
-                      className="h-full w-full object-cover"
-                    />
+                <div 
+                  key={feature.title} 
+                  className="group relative p-10 rounded-[2.5rem] bg-white border border-slate-200 shadow-soft hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden"
+                >
+                  {/* Decorative Background Element */}
+                  <div className={`absolute -top-10 -right-10 w-32 h-32 ${feature.bg} rounded-full blur-3xl opacity-0 group-hover:opacity-60 transition-opacity duration-700`} />
+                  
+                  <div className="relative z-10 space-y-6">
+                    <div className={`w-16 h-16 ${feature.bg} rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500`}>
+                      {feature.icon}
+                    </div>
+                    <div className="space-y-3">
+                      <h3 className="text-2xl font-bold text-slate-950 tracking-tight leading-tight">{feature.title}</h3>
+                      <p className="text-slate-500 leading-relaxed font-medium">
+                        {feature.desc}
+                      </p>
+                    </div>
                   </div>
-                  <CardHeader className="text-center p-6">
-                    <CardTitle className="text-base font-bold text-slate-950">{testimonial.name}</CardTitle>
-                    <CardDescription className="text-slate-600 italic leading-relaxed pt-2">
-                      "{testimonial.quote}"
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                </div>
               ))}
             </div>
           </div>
@@ -510,33 +494,56 @@ export default function HomeClient({
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="section-spacing bg-slate-950" id="cta">
-          <div className="container-base">
-            <div className="rounded-3xl bg-white border border-slate-200 p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl">
-              <div className="space-y-4 text-center md:text-left">
-                <Badge variant="muted">準備開始你的 AI 學習旅程？</Badge>
-                <h2 className="text-3xl font-bold tracking-tight text-slate-950">
-                  加入 Doris AI 學院
+        {/* CTA Section - Redesigned with Background Illustration */}
+        <section className="py-24 sm:py-32 relative overflow-hidden" id="cta">
+          {/* Background Image with Overlay */}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src="/future-school.png" 
+              alt="Future School Illustration" 
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 backdrop-blur-xs" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent" />
+          </div>
+
+          <div className="container-base relative z-10">
+            <div className="max-w-4xl mx-auto text-center space-y-10">
+              <div className="space-y-6">
+                <Badge variant="muted" className="bg-blue-500/20 text-blue-400 border-blue-500/30 backdrop-blur-md px-4 py-1 rounded-full text-sm font-bold uppercase tracking-[0.2em]">
+                  Ready to Start?
+                </Badge>
+                <h2 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-[1.1]">
+                  加入 Doris AI 學院 <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+                    開啟你的 AI 學習旅程
+                  </span>
                 </h2>
-                <p className="text-slate-500 text-lg">
-                  立即取得課程資訊與最新招生通知。
+                <p className="text-slate-300 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
+                  不只是學習工具，更是掌握不被取代的實戰能力。立即取得課程資訊與最新招生通知，與我們一起在 AI 浪潮中前行。
                 </p>
               </div>
-              {!loading && !user ? (
-                <div className="flex gap-4">
-                  <Button size="lg" variant="outline" className="px-8 h-14 text-lg" asChild>
-                    <Link href="/auth/login">登入</Link>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                {!loading && !user ? (
+                  <>
+                    <Button size="lg" className="w-full sm:w-auto h-16 px-12 text-lg font-bold bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-[0_0_40px_rgba(37,99,235,0.3)] border-0 rounded-2xl" asChild>
+                      <Link href="/auth/register">立即加入會員</Link>
+                    </Button>
+                    <Button size="lg" variant="outline" className="w-full sm:w-auto h-16 px-12 text-lg font-bold text-white border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-md rounded-2xl" asChild>
+                      <Link href="/auth/login">已有帳號登入</Link>
+                    </Button>
+                  </>
+                ) : (
+                  <Button size="lg" className="w-full sm:w-auto h-16 px-16 text-lg font-bold bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-[0_0_40px_rgba(37,99,235,0.3)] border-0 rounded-2xl" asChild>
+                    <Link href="/courses">進入課程大廳</Link>
                   </Button>
-                  <Button size="lg" className="px-12 h-14 text-lg" asChild>
-                    <Link href="/auth/register">立即加入</Link>
-                  </Button>
-                </div>
-              ) : (
-                <Button size="lg" className="px-12 h-14 text-lg" asChild>
-                  <Link href="/courses">探索課程</Link>
-                </Button>
-              )}
+                )}
+              </div>
+              
+              <p className="text-slate-500 text-sm font-medium">
+                已有超過 1,200+ 位學員加入我們的行列
+              </p>
             </div>
           </div>
         </section>
