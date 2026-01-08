@@ -195,11 +195,20 @@ export default function HomeClient({
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">目前售價</p>
-                        <p className="text-2xl font-black text-white">NT$ {latestCourse.discount_price?.toLocaleString()}</p>
+                        <p className="text-2xl font-black text-white">
+                          {latestCourse.discount_price === 0 ? "免費課程" : `NT$ ${latestCourse.discount_price?.toLocaleString()}`}
+                        </p>
                       </div>
                       <div className="text-right space-y-1">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">開課日期</p>
-                        <p className="text-sm font-bold text-white">2025.03.1</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          {latestCourse.status === "預購中" ? "預計開課" : "開課日期"}
+                        </p>
+                        <p className="text-sm font-bold text-white">
+                          {latestCourse.launch_date 
+                            ? new Date(latestCourse.launch_date).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '.')
+                            : (latestCourse.created_at ? new Date(latestCourse.created_at).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '.') : "即將開課")
+                          }
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -259,8 +268,14 @@ export default function HomeClient({
                   <CardContent className="px-4 pb-5 mt-auto">
                     <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                       <div className="flex flex-col">
-                        <span className="text-[10px] text-slate-400 line-through leading-none mb-1">NT$ {course.original_price?.toLocaleString()}</span>
-                        <span className="text-xl font-bold text-slate-950 leading-none">NT$ {course.discount_price?.toLocaleString()}</span>
+                        {course.discount_price === 0 ? (
+                          <span className="text-xl font-bold text-emerald-600 leading-none">免費課程</span>
+                        ) : (
+                          <>
+                            <span className="text-[10px] text-slate-400 line-through leading-none mb-1">NT$ {course.original_price?.toLocaleString()}</span>
+                            <span className="text-xl font-bold text-slate-950 leading-none">NT$ {course.discount_price?.toLocaleString()}</span>
+                          </>
+                        )}
                       </div>
                       <Link href={`/courses/${course.slug}`}>
                         <Button size="sm" variant="default" className="rounded-lg h-8 text-xs">

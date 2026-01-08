@@ -1,0 +1,3263 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vibe Coding 系統實戰課程 | Doris AI 學院</title>
+  <meta name="description" content="使用 Cursor, Supabase, Vercel 打造你的第一個線上服務系統。不需精通語法，只需掌握 AI 指令。" />
+  <link rel="icon" href="./img/logo.png" type="image/x-icon">
+
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            /* ✅ Light base */
+            bg: "#F7F8FC",          // 全站背景（帶一點藍感的白）
+            surface: "rgba(255,255,255,0.75)", // 卡片霧面底
+            soft: "rgba(99,102,241,0.06)",     // 輕微主題染色背景（indigo）
+            border: "rgba(15,23,42,0.10)",     // 深色系細線（slate）
+            muted: "rgba(15,23,42,0.62)",      // 次要文字
+            dark: "#0F172A",        // 主文字（slate-900）
+
+            /* ✅ 主題色：藍 / 紫 */
+            primary: "#2563EB",     // blue-600
+            primarySoft: "rgba(37,99,235,0.14)",
+            accent: "#7C3AED",      // violet-600
+            accentSoft: "rgba(124,58,237,0.14)",
+
+            /* ✅ 狀態色（保留） */
+            success: "#10B981",
+          },
+        },
+        fontFamily: {
+          sans: ['"Noto Sans TC"', '"Inter"', "sans-serif"],
+        },
+        animation: {
+          blob: "blob 7s infinite",
+          float: "float 3s ease-in-out infinite",
+          marquee: "marquee 18s linear infinite",
+          marquee2: "marquee2 18s linear infinite",
+        },
+        keyframes: {
+          blob: {
+            "0%": { transform: "translate(0px, 0px) scale(1)" },
+            "33%": { transform: "translate(30px, -50px) scale(1.1)" },
+            "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
+            "100%": { transform: "translate(0px, 0px) scale(1)" },
+          },
+          float: {
+            "0%, 100%": { transform: "translateY(0)" },
+            "50%": { transform: "translateY(-10px)" },
+          },
+          marquee: {
+            "0%": { transform: "translateX(0)" },
+            "100%": { transform: "translateX(-50%)" },
+          },
+          marquee2: {
+            "0%": { transform: "translateX(-50%)" },
+            "100%": { transform: "translateX(0)" },
+          },
+        },
+      },
+    },
+  };
+</script>
+
+
+<style>
+  :root{
+    --hero-right-gap: 100px;
+    --hero-bottom-gap: 0px;
+
+    /* ✅ 可選：讓陰影、border 更一致 */
+    --card-shadow: 0 18px 60px rgba(15, 23, 42, 0.10);
+    --card-shadow-strong: 0 22px 70px rgba(15, 23, 42, 0.16);
+  }
+
+  html, body { height: 100%; }
+  body {
+    background: radial-gradient(1200px 600px at 15% 0%, rgba(124,58,237,0.10), transparent 55%),
+                radial-gradient(900px 520px at 85% 10%, rgba(37,99,235,0.10), transparent 55%),
+                linear-gradient(180deg, #FFFFFF 0%, #F7F8FC 55%, #F7F8FC 100%);
+    color: #0F172A;
+    overflow-x: hidden;
+  }
+
+  /* ✅ 乾淨科技感的漸層字：偏藍紫，不走粉 */
+  .gradient-text {
+    background: linear-gradient(90deg, #2563EB 0%, #7C3AED 45%, #38BDF8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* ✅ Light glass card：白底霧面＋細線＋柔陰影 */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(15,23,42,0.10);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--card-shadow);
+  }
+
+  @media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce) {
+    .glass-card { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  }
+
+  /* ✅ Light theme 的 glow button：用藍紫光暈，但底是主題色 */
+  .glow-button { position: relative; z-index: 1; }
+  .glow-button::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    background: linear-gradient(45deg, rgba(37,99,235,0.55), rgba(124,58,237,0.55), rgba(56,189,248,0.45));
+    z-index: -1;
+    filter: blur(12px);
+    opacity: 0.75;
+    transition: opacity .25s ease, filter .25s ease;
+    border-radius: 9999px;
+  }
+  .glow-button:hover::before { opacity: 1; filter: blur(16px); }
+
+  .animation-delay-2000 { animation-delay: 2s; }
+  .animation-delay-4000 { animation-delay: 4s; }
+
+  /* ✅ 淺色網格噪點（可用在 section 背景上） */
+  .grid-noise {
+    background-image: radial-gradient(rgba(15,23,42,0.10) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(circle at 50% 30%, rgba(0,0,0,1), rgba(0,0,0,0));
+  }
+
+  /* ✅ reveal 保留 */
+  .reveal-slow {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 900ms ease, transform 900ms ease;
+    will-change: opacity, transform;
+  }
+  .reveal-slow.is-in { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 120ms; }
+  .reveal-delay-2 { transition-delay: 260ms; }
+  .reveal-delay-3 { transition-delay: 420ms; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-slow, .reveal-delay-1, .reveal-delay-2, .reveal-delay-3 {
+      transition: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+</style>
+<style>
+  :root{
+    --brand-bg: #F6F7FB;          /* very light */
+    --brand-surface: #FFFFFF;     /* card */
+    --brand-surface2: #F3F5FF;    /* soft tint */
+    --brand-text: #0B1020;        /* near black */
+    --brand-muted: #5B647A;       /* muted text */
+    --brand-border: rgba(12, 18, 40, .10);
+
+    --brand-primary: #4F46E5;     /* indigo (purple-blue) */
+    --brand-primary2:#2563EB;     /* blue */
+    --brand-accent: #7C3AED;      /* violet */
+  }
+
+  /* light “glass” that looks professional */
+  .glass-lite{
+    background: rgba(255,255,255,.9);
+    border: 1px solid var(--brand-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .shadow-soft{
+    box-shadow: 0 18px 50px rgba(18, 24, 40, .12);
+  }
+
+  /* gradient text for light theme */
+  .gradient-text{
+    background: linear-gradient(90deg, var(--brand-primary2), var(--brand-accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* primary button */
+  .btn-primary{
+    background: linear-gradient(135deg, var(--brand-primary2), var(--brand-accent));
+    color: #fff;
+    box-shadow: 0 12px 30px rgba(79,70,229,.25);
+  }
+  .btn-primary:hover{ filter: brightness(1.02); transform: translateY(-1px); }
+  .btn-ghost{
+    background: rgba(255,255,255,.65);
+    border: 1px solid var(--brand-border);
+  }
+  .btn-ghost:hover{ background: rgba(255,255,255,.9); }
+</style>
+
+
+</head>
+
+<body
+  class="antialiased selection:bg-indigo-200/60 selection:text-slate-900 scroll-smooth scroll-pt-20"
+  style="background: var(--brand-bg); color: var(--brand-text);"
+>
+
+  <!-- Navigation -->
+  <nav class="fixed w-full z-50 top-0 glass-lite shadow-soft">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-3">
+          <img src="./img/logo.png" alt="Doris AI 學院" class="w-8 h-8" />
+          <div class="leading-tight">
+            <div class="text-xs" style="color: var(--brand-muted);">Doris AI 學院</div>
+            <div class="font-bold text-lg tracking-tight">
+              Vibe Coding 系統實戰
+            </div>
+          </div>
+        </div>
+
+        <div class="hidden md:block">
+          <div class="ml-10 flex items-center space-x-8">
+            <a href="#pricing"
+               class="btn-primary px-4 py-2 rounded-full font-bold transition-transform duration-200">
+              立即報名
+            </a>
+          </div>
+        </div>
+
+        <!-- Mobile menu button -->
+        <div class="-mr-2 flex md:hidden">
+          <button
+            type="button"
+            onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+            class="inline-flex items-center justify-center p-2 rounded-md"
+            style="color: var(--brand-muted);"
+          >
+            <i class="fa-solid fa-bars text-xl"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div class="hidden md:hidden border-t" style="border-color: var(--brand-border);" id="mobile-menu">
+      <div class="px-3 pt-3 pb-4 space-y-2">
+        <a href="#reality" class="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50"
+           style="color: var(--brand-text);">現實痛點</a>
+        <a href="#shift" class="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50"
+           style="color: var(--brand-text);">觀念轉換</a>
+        <a href="#outcome" class="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50"
+           style="color: var(--brand-text);">最終成果</a>
+        <a href="#method" class="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50"
+           style="color: var(--brand-text);">怎麼教</a>
+        <a href="#fit" class="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50"
+           style="color: var(--brand-text);">適合誰</a>
+        <a href="#stack" class="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50"
+           style="color: var(--brand-text);">工具鏈</a>
+        <a href="#curriculum" class="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50"
+           style="color: var(--brand-text);">課程大綱</a>
+
+        <a href="#pricing" class="btn-primary inline-flex justify-center w-full px-4 py-2 rounded-full font-bold">
+          立即報名
+        </a>
+      </div>
+    </div>
+  </nav>
+
+
+  <!-- Hero Section（淺色專業版 + 深色瀏覽器 mockup 保留） -->
+  <section class="relative pt-32 pb-20 sm:pt-40 sm:pb-24 overflow-hidden">
+    <!-- 淡藍紫背景雲朵 -->
+    <div class="absolute -top-20 -left-24 w-[520px] h-[520px] rounded-full blur-3xl opacity-50"
+         style="background: radial-gradient(circle at 30% 30%, rgba(37,99,235,.18), transparent 60%);"></div>
+    <div class="absolute -top-24 -right-24 w-[520px] h-[520px] rounded-full blur-3xl opacity-45"
+         style="background: radial-gradient(circle at 30% 30%, rgba(124,58,237,.18), transparent 60%);"></div>
+    <div class="absolute -bottom-28 left-1/3 w-[620px] h-[620px] rounded-full blur-3xl opacity-40"
+         style="background: radial-gradient(circle at 30% 30%, rgba(79,70,229,.14), transparent 62%);"></div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-lite shadow-soft text-sm font-semibold mb-8">
+        <span class="flex h-2 w-2 rounded-full" style="background: #22c55e;"></span>
+        <span style="color: var(--brand-muted);">Cursor + Vercel + Supabase</span>
+      </div>
+
+      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6">
+        用 Vibe Coding 從 0 到 1<br />
+        <span class="gradient-text">實作「真的能收錢」的線上服務系統</span>
+      </h1>
+
+      <p class="mt-4 text-lg sm:text-xl max-w-3xl mx-auto mb-10 leading-relaxed"
+         style="color: var(--brand-muted);">
+        學會 AI 輔助，不用寫爆程式碼。只要你有邏輯，AI 就是你的最強工程師。<br />
+        10 小時，做出一個有前台、有後台、有會員、有金流、可上線營運的真實產品。
+      </p>
+
+      <div class="flex flex-col sm:flex-row justify-center gap-4">
+        <a href="#pricing"
+           class="btn-primary px-8 py-4 rounded-full font-bold text-lg transition-transform duration-200">
+          開始你的開發之旅 ➔
+        </a>
+      </div>
+
+      <!-- Hero Mockup + 人像 pin（保留你的邏輯） -->
+      <div id="heroPinArea" class="mt-16 relative mx-auto w-full max-w-5xl">
+
+        <!-- 人像：fixed → pinned -->
+        <div id="heroPortrait" class="hidden lg:block pointer-events-none">
+          <div class="relative">
+            <!-- 淺色光暈（不黑） -->
+            <div class="absolute -inset-6 rounded-full blur-2xl"
+                 style="background: radial-gradient(circle at 30% 30%, rgba(79,70,229,.18), transparent 60%);"></div>
+
+            <img
+              src="./img/doris-avatar.png"
+              alt="講師人像"
+              class="hero-portrait-img"
+              draggable="false"
+            />
+
+            <!-- badge 改成淺色玻璃 -->
+            <div class="hero-portrait-badge glass-lite shadow-soft">
+              <span class="inline-flex h-2 w-2 rounded-full" style="background:#22c55e;"></span>
+              Doris｜Doris AI 學院
+            </div>
+          </div>
+        </div>
+
+        <!-- Mockup：外框改成淺色玻璃，但瀏覽器內部維持深色 -->
+        <div id="heroMockup" class="glass-lite rounded-2xl p-2 border shadow-soft hero-mockup"
+             style="border-color: var(--brand-border);">
+          <div class="bg-[#1e1e1e] rounded-xl aspect-video overflow-hidden relative flex flex-col">
+
+            <div class="bg-[#2d2d2d] h-8 flex items-center px-4 gap-2">
+              <div class="w-3 h-3 rounded-full bg-red-500"></div>
+              <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+              <div class="w-3 h-3 rounded-full bg-green-500"></div>
+
+              <div class="ml-4 bg-[#1e1e1e] px-3 py-1 rounded text-xs text-gray-300 w-64 flex items-center justify-between">
+                <span class="truncate">yourproduct.com/admin</span>
+                <i class="fa-solid fa-rotate-right"></i>
+              </div>
+            </div>
+
+            <div class="relative flex-1">
+              <img
+                src="./img/web.png"
+                alt="系統後台截圖"
+                class="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent pointer-events-none"></div>
+            </div>
+
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <p class="text-2xl font-extrabold text-white px-6 py-3 rounded-lg border border-white/15 bg-black/55">
+                <i class="fa-solid fa-code mr-2" style="color: var(--brand-primary2);"></i> 你的全功能後台
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- 你的 pin 邏輯 JS 原封不動保留 -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const portrait = document.getElementById("heroPortrait");
+      const pinArea  = document.getElementById("heroPinArea");
+      const mockup   = document.getElementById("heroMockup");
+      if (!portrait || !pinArea || !mockup) return;
+
+      const RIGHT_GAP = 0;
+      const BOTTOM_GAP = 0;
+
+      let pinned = false;
+      let rafId = null;
+
+      portrait.classList.add("hero-portrait--fixed");
+
+      const update = () => {
+        rafId = null;
+
+        const mockRect = mockup.getBoundingClientRect();
+        const pinRect  = pinArea.getBoundingClientRect();
+        const img = portrait.querySelector(".hero-portrait-img");
+        const pRect = (img || portrait).getBoundingClientRect();
+
+        const portraitBottomInViewport = window.innerHeight - BOTTOM_GAP;
+
+        const shouldPin = mockRect.bottom <= portraitBottomInViewport + 2;
+        const shouldUnpin = mockRect.bottom > portraitBottomInViewport + 16;
+
+        if (!pinned && shouldPin) {
+          pinned = true;
+
+          portrait.classList.remove("hero-portrait--fixed");
+          portrait.classList.add("hero-portrait--pinned");
+
+          const mockBottomFromPinTop = (mockRect.bottom - pinRect.top);
+          const top = mockBottomFromPinTop - pRect.height - BOTTOM_GAP;
+
+          portrait.style.right = RIGHT_GAP + "px";
+          portrait.style.top = Math.max(0, top) + "px";
+          portrait.style.bottom = "auto";
+        }
+
+        if (pinned && shouldUnpin) {
+          pinned = false;
+
+          portrait.classList.remove("hero-portrait--pinned");
+          portrait.classList.add("hero-portrait--fixed");
+
+          portrait.style.top = "";
+          portrait.style.right = "";
+          portrait.style.bottom = "";
+        }
+      };
+
+      const onScroll = () => {
+        if (rafId) return;
+        rafId = requestAnimationFrame(update);
+      };
+
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll);
+      update();
+    });
+  </script>
+
+  <style>
+    .hero-mockup { position: relative; z-index: 10; }
+    #heroPortrait { z-index: 50; width: 320px; }
+
+    .hero-portrait-img{
+      width: 100%;
+      height: auto;
+      display: block;
+      user-select: none;
+      /* 改成比較乾淨的陰影 */
+      filter: drop-shadow(0 18px 45px rgba(18,24,40,.25));
+    }
+
+    .hero-portrait-badge{
+      position: absolute;
+      right: 18px;
+      top: 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--brand-text);
+    }
+
+    #heroPortrait.hero-portrait--fixed{
+      position: fixed;
+      right: var(--hero-right-gap);
+      bottom: var(--hero-bottom-gap);
+      top: auto;
+      z-index: 50;
+    }
+
+    #heroPortrait.hero-portrait--pinned{
+      position: absolute;
+      z-index: 50;
+    }
+  </style>
+
+
+
+
+
+  
+
+<!-- Reality Check / 現實痛點（只描述問題，不給答案） -->
+<!-- Reality Check / 現實痛點（只描述問題，不給答案） -->
+<section id="reality-check" class="py-24 border-t" style="border-color: var(--brand-border);">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Title -->
+    <div class="text-center mb-12 sm:mb-16 !opacity-100 !translate-y-0">
+      <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold glass-lite shadow-soft">
+        <span class="inline-flex h-2 w-2 rounded-full" style="background: linear-gradient(135deg, var(--brand-primary2), var(--brand-accent));"></span>
+        <span style="color: var(--brand-muted);">現實痛點</span>
+      </span>
+
+      <h2 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
+        你做出畫面了，但始終無法完成一個真正的系統
+      </h2>
+
+      <p class="mt-4 text-base sm:text-lg max-w-3xl mx-auto leading-relaxed" style="color: var(--brand-muted);">
+        Vibe Coding 讓開始變得很快，但真正的卡點常常出現在「下一步」。<br class="hidden sm:block" />
+        當關鍵模組接不回同一條流程，網站就會一直停在半成品。
+      </p>
+    </div>
+
+    <!-- Content -->
+    <div class="grid lg:grid-cols-12 gap-12 items-center">
+
+      <!-- LEFT -->
+      <div class="lg:col-span-6">
+        <div class="rounded-3xl p-8 sm:p-10 glass-lite shadow-soft">
+
+          <h3 class="text-2xl sm:text-3xl font-extrabold leading-tight">
+            你可能正在這三種卡關裡
+          </h3>
+
+          <div class="mt-7 space-y-4">
+
+            <!-- 1 -->
+            <div class="rounded-2xl p-5 border bg-white"
+                 style="border-color: var(--brand-border); background: rgba(255,255,255,.78);">
+              <div class="flex items-start gap-4">
+                <span class="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-2xl border"
+                      style="border-color: var(--brand-border); background: rgba(79,70,229,.08); color: var(--brand-primary);">
+                  <i class="fa-solid fa-puzzle-piece"></i>
+                </span>
+                <div>
+                  <div class="font-bold" style="color: var(--brand-text);">片段很多，但拼不起來</div>
+                  <div class="mt-1 text-sm leading-relaxed" style="color: var(--brand-muted);">
+                    畫面、按鈕、頁面都有了，卻總是差一個「完整流程」。
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2 -->
+            <div class="rounded-2xl p-5 border bg-white"
+                 style="border-color: var(--brand-border); background: rgba(255,255,255,.78);">
+              <div class="flex items-start gap-4">
+                <span class="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-2xl border"
+                      style="border-color: var(--brand-border); background: rgba(37,99,235,.08); color: var(--brand-primary2);">
+                  <i class="fa-solid fa-basket-shopping"></i>
+                </span>
+                <div>
+                  <div class="font-bold" style="color: var(--brand-text);">想做可銷售的網站，但不知道怎麼「完成」</div>
+                  <div class="mt-1 text-sm leading-relaxed" style="color: var(--brand-muted);">
+                    真的有人下單、付款、開通之後會發生什麼，你沒有把握。
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3 -->
+            <div class="rounded-2xl p-5 border bg-white"
+                 style="border-color: var(--brand-border); background: rgba(255,255,255,.78);">
+              <div class="flex items-start gap-4">
+                <span class="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-2xl border"
+                      style="border-color: var(--brand-border); background: rgba(124,58,237,.08); color: var(--brand-accent);">
+                  <i class="fa-solid fa-sliders"></i>
+                </span>
+                <div>
+                  <div class="font-bold" style="color: var(--brand-text);">UI 做得出來，但後台怎麼串你不確定</div>
+                  <div class="mt-1 text-sm leading-relaxed" style="color: var(--brand-muted);">
+                    使用者、內容、訂單、權限怎麼管理，腦中沒有一張清楚的圖。
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Closing (still problem-only) -->
+          <div class="mt-8 leading-relaxed" style="color: var(--brand-muted);">
+            你不是做不出來。<br />
+            <span class="font-semibold" style="color: var(--brand-text);">
+              你是卡在「下一步怎麼補齊」，讓它變成真正能用的系統。
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT: Illustration -->
+      <div class="lg:col-span-6">
+        <div class="relative">
+          <!-- 淡藍紫 glow（乾淨版） -->
+          <div class="absolute -inset-6 rounded-[36px] blur-2xl opacity-70"
+               style="background: radial-gradient(circle at 30% 30%, rgba(37,99,235,.18), transparent 60%),
+                              radial-gradient(circle at 70% 30%, rgba(124,58,237,.18), transparent 62%);"></div>
+
+          <div class="relative rounded-3xl overflow-hidden glass-lite shadow-soft">
+            <div class="aspect-[4/3] sm:aspect-[16/11]" style="background: rgba(12,18,40,.03);">
+              <img
+                src="./img/problemcoding.png"
+                alt="學生坐在電腦前，看著程式畫面感到困惑的插畫"
+                class="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+
+            <!-- 圖片下方淡淡的 caption（更像專業網站） -->
+            <div class="px-5 py-4 border-t text-sm"
+                 style="border-color: var(--brand-border); color: var(--brand-muted);">
+              常見狀態：能做出 UI，但流程、資料、權限與付款串接還沒成形。
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+
+
+<!-- Slow reveal animation (add once globally) -->
+<style>
+  .reveal-slow { opacity: 0; transform: translateY(18px); transition: opacity 900ms ease, transform 900ms ease; will-change: opacity, transform; }
+  .reveal-slow.is-in { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 120ms; }
+  .reveal-delay-2 { transition-delay: 260ms; }
+  .reveal-delay-3 { transition-delay: 420ms; }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-slow, .reveal-delay-1, .reveal-delay-2, .reveal-delay-3 { transition: none !important; opacity: 1 !important; transform: none !important; }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const portrait = document.getElementById("heroPortrait");
+    const pinArea  = document.getElementById("heroPinArea");
+    const mockup   = document.getElementById("heroMockup");
+    if (!portrait || !pinArea || !mockup) return;
+
+    // ✅ 從 CSS 讀變數，避免 RIGHT_GAP / CSS right 不一致
+    const css = getComputedStyle(document.documentElement);
+    const RIGHT_GAP = parseFloat(css.getPropertyValue("--hero-right-gap")) || 0;
+    const BOTTOM_GAP = parseFloat(css.getPropertyValue("--hero-bottom-gap")) || 0;
+
+    let pinned = false;
+    let rafId = null;
+
+    portrait.classList.add("hero-portrait--fixed");
+
+    const update = () => {
+      rafId = null;
+
+      const mockRect = mockup.getBoundingClientRect();
+      const pinRect  = pinArea.getBoundingClientRect();
+
+      // 人像高度用容器本身算（比抓 img 更穩）
+      const pHeight = portrait.getBoundingClientRect().height;
+
+      const portraitBottomLine = window.innerHeight - BOTTOM_GAP;
+
+      // ✅ 進入 pin：mockup 底端 <= 人像底線
+      const shouldPin = mockRect.bottom <= portraitBottomLine + 2;
+      const shouldUnpin = mockRect.bottom > portraitBottomLine + 16;
+
+      if (!pinned && shouldPin) {
+        pinned = true;
+        portrait.classList.remove("hero-portrait--fixed");
+        portrait.classList.add("hero-portrait--pinned");
+
+        // ✅ pinned 時：人像「貼齊 mockup 底端」，但座標是 pinArea 內部
+        const mockBottomFromPinTop = mockRect.bottom - pinRect.top;
+        const top = mockBottomFromPinTop - pHeight - BOTTOM_GAP;
+
+        portrait.style.right = RIGHT_GAP + "px";
+        portrait.style.top = Math.max(0, top) + "px";
+        portrait.style.bottom = "auto";
+      }
+
+      if (pinned && shouldUnpin) {
+        pinned = false;
+        portrait.classList.remove("hero-portrait--pinned");
+        portrait.classList.add("hero-portrait--fixed");
+        portrait.style.top = "";
+        portrait.style.right = "";
+        portrait.style.bottom = "";
+      }
+    };
+
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(update);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();
+  });
+</script>
+
+
+
+
+
+
+<!-- Value Shift Section (System Completion Animation) -->
+<section id="value-shift" class="py-24 border-t" style="border-color: var(--brand-border);">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Title -->
+    <div class="text-center mb-12 sm:mb-16">
+      <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold glass-lite shadow-soft">
+        <span class="inline-flex h-2 w-2 rounded-full"
+              style="background: linear-gradient(135deg, var(--brand-primary2), var(--brand-accent));"></span>
+        <span style="color: var(--brand-muted);">Value Shift</span>
+      </span>
+
+      <h2 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
+        從「做出畫面」到「完成系統」
+      </h2>
+
+      <p class="mt-4 text-base sm:text-lg max-w-3xl mx-auto leading-relaxed" style="color: var(--brand-muted);">
+        Vibe Coding 讓開始變得很快，但真正的價值，是你知道自己在哪個環節，下一步該補上什麼。<br class="hidden sm:block" />
+        當關鍵模組一個個接上，網站才會從半成品，變成能真正運作的產品。
+      </p>
+    </div>
+
+    <!-- Stage -->
+    <div class="relative">
+      <!-- Background glow (light) -->
+      <div class="absolute inset-0 pointer-events-none">
+        <div class="absolute left-1/2 top-6 -translate-x-1/2 w-[760px] h-[760px] rounded-full blur-3xl opacity-70"
+             style="background: radial-gradient(circle at 35% 35%, rgba(37,99,235,.18), transparent 60%),
+                            radial-gradient(circle at 70% 30%, rgba(124,58,237,.16), transparent 62%);"></div>
+        <div class="absolute left-1/2 bottom-0 -translate-x-1/2 w-[680px] h-[680px] rounded-full blur-3xl opacity-55"
+             style="background: radial-gradient(circle at 40% 60%, rgba(79,70,229,.14), transparent 62%);"></div>
+      </div>
+
+      <div class="relative rounded-3xl p-4 sm:p-6 overflow-hidden glass-lite">
+
+        <!-- Grid helper (subtle, light) -->
+        <div class="absolute inset-0 opacity-[0.06] pointer-events-none"
+             style="background-image:
+               linear-gradient(rgba(15,23,42,.45) 1px, transparent 1px),
+               linear-gradient(90deg, rgba(15,23,42,.45) 1px, transparent 1px);
+               background-size: 32px 32px;">
+        </div>
+
+        <div class="relative">
+
+          <!-- Canvas: browser mock + connecting modules -->
+          <div class="relative min-h-[560px]">
+
+            <!-- CENTER: Browser Mock (✅ keep dark) -->
+            <div class="relative max-w-4xl mx-auto">
+              <div class="rounded-2xl p-2 border shadow-2xl"
+                   style="border-color: rgba(148,163,184,.35); box-shadow: 0 30px 80px rgba(2,6,23,.14); background: rgba(255,255,255,.55);">
+                <div class="bg-[#141414] rounded-xl overflow-hidden relative">
+
+                  <!-- Fake Browser Header -->
+                  <div class="bg-[#222] h-10 flex items-center px-4 gap-2 border-b border-white/5">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+
+                    <div class="ml-4 bg-black/40 border border-white/10 px-3 py-1 rounded-full text-xs text-gray-300 flex items-center gap-2 w-72 max-w-full">
+                      <i class="fa-solid fa-lock text-gray-500"></i>
+                      <span class="truncate">your-idea.local</span>
+                    </div>
+
+                    <!-- Status pill -->
+                    <span id="vs-status-pill"
+                          class="ml-auto text-[11px] px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-200 transition-all duration-500">
+                      半成品（待補齊）
+                    </span>
+                  </div>
+
+                  <!-- Content skeleton -->
+                  <div class="p-6 sm:p-7 grid grid-cols-12 gap-5 min-h-[420px]">
+                    <!-- Sidebar -->
+                    <div class="col-span-4 sm:col-span-3 bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col gap-3">
+                      <div class="h-9 rounded-lg bg-white/10 animate-pulse"></div>
+                      <div class="h-8 rounded-lg bg-white/10 animate-pulse"></div>
+                      <div class="h-8 rounded-lg bg-white/10 animate-pulse"></div>
+                      <div class="h-8 rounded-lg bg-white/10 animate-pulse"></div>
+                      <div class="mt-auto h-10 rounded-lg bg-white/10 animate-pulse"></div>
+                    </div>
+
+                    <!-- Main -->
+                    <div class="col-span-8 sm:col-span-9 flex flex-col gap-4">
+                      <div class="flex items-center justify-between gap-3">
+                        <div class="h-8 w-1/2 rounded-lg bg-white/10 border border-white/10 animate-pulse"></div>
+                        <div class="h-9 w-28 rounded-full bg-white/10 border border-white/10 animate-pulse"></div>
+                      </div>
+
+                      <div class="grid grid-cols-3 gap-3">
+                        <div class="h-20 rounded-xl bg-white/5 border border-white/10 animate-pulse"></div>
+                        <div class="h-20 rounded-xl bg-white/5 border border-white/10 animate-pulse"></div>
+                        <div class="h-20 rounded-xl bg-white/5 border border-white/10 animate-pulse"></div>
+                      </div>
+
+                      <div class="rounded-xl bg-white/5 border border-white/10 p-4 flex flex-col gap-3">
+                        <div class="h-3 w-28 bg-white/10 rounded animate-pulse"></div>
+                        <div class="grid grid-cols-6 gap-2">
+                          <div class="h-7 col-span-2 bg-white/10 rounded animate-pulse"></div>
+                          <div class="h-7 col-span-2 bg-white/10 rounded animate-pulse"></div>
+                          <div class="h-7 col-span-2 bg-white/10 rounded animate-pulse"></div>
+                        </div>
+                        <div class="grid grid-cols-6 gap-2">
+                          <div class="h-7 col-span-2 bg-white/10 rounded animate-pulse"></div>
+                          <div class="h-7 col-span-2 bg-white/10 rounded animate-pulse"></div>
+                          <div class="h-7 col-span-2 bg-white/10 rounded animate-pulse"></div>
+                        </div>
+                      </div>
+
+                      <!-- In-page checkpoints -->
+                      <div class="pt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                        <span id="vs-check-login" class="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-300 transition-all duration-500">
+                          會員登入：未完成
+                        </span>
+                        <span id="vs-check-payment" class="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-300 transition-all duration-500">
+                          收款流程：未完成
+                        </span>
+                        <span id="vs-check-admin" class="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-300 transition-all duration-500">
+                          後台管理：未完成
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Overlay -->
+                  <div id="vs-overlay"
+                       class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 translate-y-3 transition-all duration-700">
+                    <div class="max-w-[86%] rounded-2xl px-6 py-5 bg-black/60 border border-white/15 shadow-xl text-center">
+                      <div class="text-sm text-gray-300 mb-2 flex items-center justify-center gap-2">
+                        <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
+                        系統補齊完成
+                      </div>
+                      <div class="text-2xl sm:text-3xl font-extrabold text-white leading-snug">
+                        不是做出功能<br class="hidden sm:block">是完成一個系統
+                      </div>
+                      <div class="mt-3 flex flex-wrap justify-center gap-2">
+                        <span class="text-[11px] px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-200">能運作</span>
+                        <span class="text-[11px] px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-200">能擴充</span>
+                        <span class="text-[11px] px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-200">能收錢</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- SVG connector lines (tone down slightly) -->
+            <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1000 560" preserveAspectRatio="none" aria-hidden="true">
+              <path id="vs-line-auth" d="M 780 165 C 720 185, 700 195, 640 220"
+                    fill="none" stroke="rgba(124,58,237,0.75)" stroke-width="2" stroke-linecap="round"
+                    stroke-dasharray="6 10" opacity="0.12"/>
+              <path id="vs-line-data" d="M 500 470 C 520 430, 520 410, 520 360"
+                    fill="none" stroke="rgba(37,99,235,0.75)" stroke-width="2" stroke-linecap="round"
+                    stroke-dasharray="6 10" opacity="0.12"/>
+              <path id="vs-line-pay" d="M 220 170 C 280 185, 320 205, 380 230"
+                    fill="none" stroke="rgba(16,185,129,0.75)" stroke-width="2" stroke-linecap="round"
+                    stroke-dasharray="6 10" opacity="0.12"/>
+              <path id="vs-line-admin" d="M 500 70 C 500 110, 500 150, 500 190"
+                    fill="none" stroke="rgba(245,158,11,0.78)" stroke-width="2" stroke-linecap="round"
+                    stroke-dasharray="6 10" opacity="0.12"/>
+            </svg>
+
+            <!-- MODULE: Auth (right) -->
+            <div id="vs-mod-auth" class="absolute top-[90px] right-6 sm:right-10 opacity-0 translate-y-4 scale-[.98] transition-all duration-700">
+              <div class="rounded-2xl p-4 w-[230px] glass-lite shadow-soft border"
+                   style="border-color: var(--brand-border);">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-9 h-9 rounded-xl flex items-center justify-center border"
+                          style="border-color: rgba(124,58,237,.18); background: rgba(124,58,237,.10); color: rgb(124,58,237);">
+                      <i class="fa-solid fa-user-shield"></i>
+                    </span>
+                    <div>
+                      <div class="font-bold" style="color: var(--brand-text);">會員系統</div>
+                      <div class="text-xs" style="color: var(--brand-muted);">Auth / Access</div>
+                    </div>
+                  </div>
+                  <span id="vs-badge-auth" class="text-[11px] px-2.5 py-1 rounded-full border"
+                        style="border-color: var(--brand-border); background: rgba(255,255,255,.7); color: var(--brand-muted);">
+                    待串接
+                  </span>
+                </div>
+                <div class="mt-3 text-xs leading-relaxed" style="color: var(--brand-muted);">
+                  記住使用者、權限控管、登入狀態
+                </div>
+              </div>
+            </div>
+
+            <!-- MODULE: Payment (left) -->
+            <div id="vs-mod-pay" class="absolute top-[90px] left-6 sm:left-10 opacity-0 translate-y-4 scale-[.98] transition-all duration-700">
+              <div class="rounded-2xl p-4 w-[230px] glass-lite shadow-soft border"
+                   style="border-color: var(--brand-border);">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-9 h-9 rounded-xl flex items-center justify-center border"
+                          style="border-color: rgba(16,185,129,.18); background: rgba(16,185,129,.10); color: rgb(16,185,129);">
+                      <i class="fa-solid fa-credit-card"></i>
+                    </span>
+                    <div>
+                      <div class="font-bold" style="color: var(--brand-text);">金流系統</div>
+                      <div class="text-xs" style="color: var(--brand-muted);">Payment / Order</div>
+                    </div>
+                  </div>
+                  <span id="vs-badge-pay" class="text-[11px] px-2.5 py-1 rounded-full border"
+                        style="border-color: var(--brand-border); background: rgba(255,255,255,.7); color: var(--brand-muted);">
+                    待串接
+                  </span>
+                </div>
+                <div class="mt-3 text-xs leading-relaxed" style="color: var(--brand-muted);">
+                  訂單狀態、付款回傳、開通流程
+                </div>
+              </div>
+            </div>
+
+            <!-- MODULE: Data (bottom center) -->
+            <div id="vs-mod-data" class="absolute bottom-6 left-1/2 -translate-x-1/2 opacity-0 translate-y-4 scale-[.98] transition-all duration-700">
+              <div class="rounded-2xl p-4 w-[260px] glass-lite shadow-soft border"
+                   style="border-color: var(--brand-border);">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-9 h-9 rounded-xl flex items-center justify-center border"
+                          style="border-color: rgba(37,99,235,.18); background: rgba(37,99,235,.10); color: rgb(37,99,235);">
+                      <i class="fa-solid fa-database"></i>
+                    </span>
+                    <div>
+                      <div class="font-bold" style="color: var(--brand-text);">資料結構</div>
+                      <div class="text-xs" style="color: var(--brand-muted);">Data / State</div>
+                    </div>
+                  </div>
+                  <span id="vs-badge-data" class="text-[11px] px-2.5 py-1 rounded-full border"
+                        style="border-color: var(--brand-border); background: rgba(255,255,255,.7); color: var(--brand-muted);">
+                    待串接
+                  </span>
+                </div>
+                <div class="mt-3 text-xs leading-relaxed" style="color: var(--brand-muted);">
+                  前後台資料流、狀態變化、可擴充結構
+                </div>
+              </div>
+            </div>
+
+            <!-- MODULE: Admin (top center) -->
+            <div id="vs-mod-admin" class="absolute top-6 left-1/2 -translate-x-1/2 opacity-0 translate-y-4 scale-[.98] transition-all duration-700">
+              <div class="rounded-2xl p-4 w-[260px] glass-lite shadow-soft border"
+                   style="border-color: var(--brand-border);">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-9 h-9 rounded-xl flex items-center justify-center border"
+                          style="border-color: rgba(245,158,11,.18); background: rgba(245,158,11,.12); color: rgb(245,158,11);">
+                      <i class="fa-solid fa-screwdriver-wrench"></i>
+                    </span>
+                    <div>
+                      <div class="font-bold" style="color: var(--brand-text);">後台管理</div>
+                      <div class="text-xs" style="color: var(--brand-muted);">Admin / Ops</div>
+                    </div>
+                  </div>
+                  <span id="vs-badge-admin" class="text-[11px] px-2.5 py-1 rounded-full border"
+                        style="border-color: var(--brand-border); background: rgba(255,255,255,.7); color: var(--brand-muted);">
+                    待串接
+                  </span>
+                </div>
+                <div class="mt-3 text-xs leading-relaxed" style="color: var(--brand-muted);">
+                  使用者、內容、訂單管理與營運流程
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Copy: key idea -->
+          <div class="mt-10 text-center max-w-4xl mx-auto">
+            <p class="leading-relaxed text-lg" style="color: var(--brand-muted);">
+              沒有流程設計，AI 只能幫你產出片段；沒有系統思維，網站永遠只是半成品。<br />
+              當你開始用「系統」的角度思考，Vibe Coding 才會從玩具，變成能真正幫你完成產品的工具。
+            </p>
+
+            <div class="mt-8 text-center">
+              <p class="text-2xl sm:text-3xl font-extrabold leading-snug">
+                <span style="color: var(--brand-muted);">AI 能幫你寫程式，</span>
+                <span class="gradient-text">但只有你能決定系統怎麼完成。</span>
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Mobile fallback: simple steps (light) -->
+      <div class="mt-8 lg:hidden">
+        <div class="grid sm:grid-cols-4 gap-4">
+          <div class="rounded-2xl p-4 glass-lite shadow-soft border" style="border-color: var(--brand-border);">
+            <div class="text-sm font-bold" style="color: var(--brand-text);">會員系統</div>
+            <div class="mt-2 text-xs" style="color: var(--brand-muted);">Auth / Access</div>
+          </div>
+          <div class="rounded-2xl p-4 glass-lite shadow-soft border" style="border-color: var(--brand-border);">
+            <div class="text-sm font-bold" style="color: var(--brand-text);">資料結構</div>
+            <div class="mt-2 text-xs" style="color: var(--brand-muted);">Data / State</div>
+          </div>
+          <div class="rounded-2xl p-4 glass-lite shadow-soft border" style="border-color: var(--brand-border);">
+            <div class="text-sm font-bold" style="color: var(--brand-text);">金流系統</div>
+            <div class="mt-2 text-xs" style="color: var(--brand-muted);">Payment / Order</div>
+          </div>
+          <div class="rounded-2xl p-4 glass-lite shadow-soft border" style="border-color: var(--brand-border);">
+            <div class="text-sm font-bold" style="color: var(--brand-text);">後台管理</div>
+            <div class="mt-2 text-xs" style="color: var(--brand-muted);">Admin / Ops</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Minimal JS: reveals modules sequentially when section enters viewport -->
+  <script>
+    (function () {
+      const root = document.getElementById('value-shift');
+      if (!root) return;
+
+      const els = {
+        modAuth: document.getElementById('vs-mod-auth'),
+        modPay: document.getElementById('vs-mod-pay'),
+        modData: document.getElementById('vs-mod-data'),
+        modAdmin: document.getElementById('vs-mod-admin'),
+
+        lineAuth: document.getElementById('vs-line-auth'),
+        linePay: document.getElementById('vs-line-pay'),
+        lineData: document.getElementById('vs-line-data'),
+        lineAdmin: document.getElementById('vs-line-admin'),
+
+        badgeAuth: document.getElementById('vs-badge-auth'),
+        badgePay: document.getElementById('vs-badge-pay'),
+        badgeData: document.getElementById('vs-badge-data'),
+        badgeAdmin: document.getElementById('vs-badge-admin'),
+
+        checkLogin: document.getElementById('vs-check-login'),
+        checkPayment: document.getElementById('vs-check-payment'),
+        checkAdmin: document.getElementById('vs-check-admin'),
+
+        statusPill: document.getElementById('vs-status-pill'),
+        overlay: document.getElementById('vs-overlay'),
+      };
+
+      const preferReduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function show(el) {
+        if (!el) return;
+        el.classList.remove('opacity-0', 'translate-y-4', 'scale-[.98]');
+        el.classList.add('opacity-100', 'translate-y-0', 'scale-100');
+      }
+
+      function glowLine(pathEl) {
+        if (!pathEl) return;
+        pathEl.style.opacity = '0.85';
+        pathEl.style.strokeDasharray = '10 8';
+      }
+
+      function doneBadge(badgeEl) {
+        if (!badgeEl) return;
+        badgeEl.textContent = '已完成 ✓';
+        badgeEl.className = 'text-[11px] px-2.5 py-1 rounded-full border';
+        badgeEl.style.borderColor = 'rgba(16,185,129,.22)';
+        badgeEl.style.background = 'rgba(16,185,129,.10)';
+        badgeEl.style.color = 'rgb(16,185,129)';
+      }
+
+      function doneCheck(checkEl, text) {
+        if (!checkEl) return;
+        checkEl.textContent = text + ' ✓';
+        checkEl.className = 'px-3 py-1 rounded-full border transition-all duration-500';
+        checkEl.style.borderColor = 'rgba(16,185,129,.22)';
+        checkEl.style.background = 'rgba(16,185,129,.10)';
+        checkEl.style.color = 'rgb(16,185,129)';
+      }
+
+      function setStatusDone() {
+        if (!els.statusPill) return;
+        els.statusPill.textContent = '可營運（已補齊）';
+        els.statusPill.className = 'ml-auto text-[11px] px-3 py-1 rounded-full border transition-all duration-500';
+        els.statusPill.style.borderColor = 'rgba(16,185,129,.22)';
+        els.statusPill.style.background = 'rgba(16,185,129,.10)';
+        els.statusPill.style.color = 'rgb(16,185,129)';
+      }
+
+      let played = false;
+
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting || played) return;
+          played = true;
+
+          if (preferReduce) {
+            show(els.modAuth); show(els.modPay); show(els.modData); show(els.modAdmin);
+            glowLine(els.lineAuth); glowLine(els.linePay); glowLine(els.lineData); glowLine(els.lineAdmin);
+            doneBadge(els.badgeAuth); doneBadge(els.badgePay); doneBadge(els.badgeData); doneBadge(els.badgeAdmin);
+            doneCheck(els.checkLogin, '會員登入：已完成');
+            doneCheck(els.checkPayment, '收款流程：已完成');
+            doneCheck(els.checkAdmin, '後台管理：已完成');
+            setStatusDone();
+            if (els.overlay) els.overlay.classList.remove('opacity-0', 'translate-y-3');
+            if (els.overlay) els.overlay.classList.add('opacity-100', 'translate-y-0');
+            return;
+          }
+
+          const steps = [
+            () => { show(els.modAuth); glowLine(els.lineAuth); doneBadge(els.badgeAuth); doneCheck(els.checkLogin, '會員登入：已完成'); },
+            () => { show(els.modData); glowLine(els.lineData); doneBadge(els.badgeData); },
+            () => { show(els.modPay);  glowLine(els.linePay);  doneBadge(els.badgePay);  doneCheck(els.checkPayment, '收款流程：已完成'); },
+            () => { show(els.modAdmin);glowLine(els.lineAdmin);doneBadge(els.badgeAdmin);doneCheck(els.checkAdmin, '後台管理：已完成'); },
+            () => {
+              setStatusDone();
+              if (els.overlay) {
+                els.overlay.classList.remove('opacity-0', 'translate-y-3');
+                els.overlay.classList.add('opacity-100', 'translate-y-0');
+              }
+            },
+          ];
+
+          steps.forEach((fn, idx) => setTimeout(fn, 450 + idx * 650));
+        });
+      }, { threshold: 0.25 });
+
+      io.observe(root);
+    })();
+  </script>
+</section>
+
+
+<!-- Outcome Carousel (hover tags) -->
+<section id="outcome" class="py-24 border-t" style="border-color: var(--brand-border);">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Title -->
+    <div class="text-center mb-12 sm:mb-16">
+      <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold glass-lite shadow-soft">
+        <span class="inline-flex h-2 w-2 rounded-full"
+              style="background: linear-gradient(135deg, rgba(16,185,129,1), rgba(37,99,235,1));"></span>
+        <span style="color: var(--brand-muted);">最終成果</span>
+      </span>
+
+      <h2 class="text-4xl sm:text-5xl font-extrabold mt-6">
+        你帶走的不是一個網頁，<br />
+        <span class="gradient-text">而是一套能收錢的系統</span>
+      </h2>
+
+      <p class="mt-4 text-base sm:text-lg max-w-3xl mx-auto leading-relaxed" style="color: var(--brand-muted);">
+        你會看到完整使用旅程：加入購物車 → 完成付款 → 後台出貨與通知。<br class="hidden sm:block" />
+        這就是你最後會完成的「可營運」系統。
+      </p>
+    </div>
+
+    <div class="grid lg:grid-cols-12 gap-10 items-stretch">
+
+      <!-- LEFT: Browser mock carousel (mockup stays dark) -->
+      <div class="lg:col-span-8">
+        <div class="relative">
+          <!-- glow (blue/purple) -->
+          <div class="absolute -inset-4 rounded-[36px] blur-2xl opacity-70"
+               style="background: radial-gradient(circle at 30% 35%, rgba(37,99,235,.20), transparent 58%),
+                              radial-gradient(circle at 70% 30%, rgba(124,58,237,.18), transparent 60%),
+                              radial-gradient(circle at 50% 80%, rgba(16,185,129,.10), transparent 60%);"></div>
+
+          <div class="relative rounded-3xl overflow-hidden border glass-lite shadow-soft" style="border-color: var(--brand-border);">
+            <!-- Fake Browser Header (dark) -->
+            <div class="bg-[#1f1f1f] h-11 flex items-center px-4 gap-2 border-b border-white/5">
+              <div class="w-3 h-3 rounded-full bg-red-500"></div>
+              <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+              <div class="w-3 h-3 rounded-full bg-green-500"></div>
+
+              <div class="ml-4 bg-black/40 border border-white/10 px-3 py-1 rounded-full text-xs text-gray-300 flex items-center gap-2 w-[320px] max-w-full">
+                <i class="fa-solid fa-lock text-gray-400"></i>
+                <span id="outcome-url" class="truncate">yourproduct.com/store</span>
+              </div>
+
+              <span id="outcome-badge" class="ml-auto text-[11px] px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-200">
+                加入購物車
+              </span>
+            </div>
+
+            <!-- Slides container (dark) -->
+            <div class="bg-[#141414] p-4 sm:p-6">
+              <div class="relative rounded-2xl border border-white/10 bg-black/20 overflow-hidden aspect-[16/10]">
+
+                <!-- Slide 1: Add to cart -->
+                <div class="outcome-slide absolute inset-0 opacity-100 scale-100 transition-all duration-500 ease-out" data-slide="cart">
+                  <img
+                    src="./img/web.png"
+                    alt="加入購物車畫面"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div class="absolute left-4 bottom-4 right-4 pointer-events-none">
+                    <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-black/55 text-sm text-gray-100">
+                      <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
+                      使用者把商品加進購物車，系統即時更新狀態
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Slide 2: Payment success -->
+                <div class="outcome-slide absolute inset-0 opacity-0 scale-[0.98] pointer-events-none transition-all duration-500 ease-out" data-slide="pay">
+                  <img
+                    src="./img/web.png"
+                    alt="付款成功畫面"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div class="absolute left-4 bottom-4 right-4 pointer-events-none">
+                    <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-black/55 text-sm text-gray-100">
+                      <span class="inline-flex h-2 w-2 rounded-full bg-sky-400"></span>
+                      付款完成後 webhook 回傳，訂單狀態自動更新
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Slide 3: Admin fulfillment -->
+                <div class="outcome-slide absolute inset-0 opacity-0 scale-[0.98] pointer-events-none transition-all duration-500 ease-out" data-slide="admin">
+                  <img
+                    src="./img/web.png"
+                    alt="後台出貨與訂單管理畫面"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div class="absolute left-4 bottom-4 right-4 pointer-events-none">
+                    <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-black/55 text-sm text-gray-100">
+                      <span class="inline-flex h-2 w-2 rounded-full bg-yellow-400"></span>
+                      後台收到訂單 → 出貨 → 通知使用者，一路可追蹤
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- hint (light style even inside dark area) -->
+              <div class="mt-4 flex flex-wrap items-center gap-2 text-xs text-gray-300">
+                <span class="px-2.5 py-1 rounded-full border border-white/10 bg-white/5">hover 右側標籤切換</span>
+                <span class="px-2.5 py-1 rounded-full border border-white/10 bg-white/5">手機可點擊切換</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Scenario tags (light) -->
+      <div class="lg:col-span-4">
+        <div class="rounded-3xl p-6 sm:p-7 h-full glass-lite shadow-soft border" style="border-color: var(--brand-border);">
+          <h3 class="text-xl sm:text-2xl font-extrabold leading-tight">
+            你會做出能跑完的流程
+          </h3>
+
+          <p class="mt-3 leading-relaxed" style="color: var(--brand-muted);">
+            把滑鼠移到下面情境，左邊會切到對應畫面。
+          </p>
+
+          <div class="mt-6 space-y-3" id="outcome-tags">
+            <!-- Tag 1 -->
+            <button
+              class="outcome-tag outcome-tag--lite w-full text-left rounded-2xl p-4 focus:outline-none"
+              data-target="cart"
+              type="button"
+            >
+              <div class="flex items-start gap-3">
+                <span class="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-2xl border"
+                      style="border-color: rgba(16,185,129,.22); background: rgba(16,185,129,.10); color: rgb(16,185,129);">
+                  <i class="fa-solid fa-cart-shopping"></i>
+                </span>
+                <div>
+                  <div class="font-bold" style="color: var(--brand-text);">加入購物車</div>
+                  <div class="text-sm mt-1" style="color: var(--brand-muted);">
+                    商品、數量、總金額、狀態同步更新
+                  </div>
+                </div>
+              </div>
+            </button>
+
+            <!-- Tag 2 -->
+            <button
+              class="outcome-tag outcome-tag--lite w-full text-left rounded-2xl p-4 focus:outline-none"
+              data-target="pay"
+              type="button"
+            >
+              <div class="flex items-start gap-3">
+                <span class="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-2xl border"
+                      style="border-color: rgba(37,99,235,.22); background: rgba(37,99,235,.10); color: rgb(37,99,235);">
+                  <i class="fa-solid fa-credit-card"></i>
+                </span>
+                <div>
+                  <div class="font-bold" style="color: var(--brand-text);">完成付款</div>
+                  <div class="text-sm mt-1" style="color: var(--brand-muted);">
+                    callback / webhook → 訂單狀態自動變更
+                  </div>
+                </div>
+              </div>
+            </button>
+
+            <!-- Tag 3 -->
+            <button
+              class="outcome-tag outcome-tag--lite w-full text-left rounded-2xl p-4 focus:outline-none"
+              data-target="admin"
+              type="button"
+            >
+              <div class="flex items-start gap-3">
+                <span class="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-2xl border"
+                      style="border-color: rgba(124,58,237,.22); background: rgba(124,58,237,.10); color: rgb(124,58,237);">
+                  <i class="fa-solid fa-box-open"></i>
+                </span>
+                <div>
+                  <div class="font-bold" style="color: var(--brand-text);">收到訂單 & 出貨</div>
+                  <div class="text-sm mt-1" style="color: var(--brand-muted);">
+                    後台管理訂單、出貨、通知與追蹤
+                  </div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <div class="mt-6 rounded-2xl p-4 text-sm leading-relaxed border bg-white/70"
+               style="border-color: var(--brand-border); color: var(--brand-muted);">
+            這三段流程串起來，你就擁有一套可營運的系統：<br />
+            <span class="font-semibold" style="color: var(--brand-text);">
+              前台 → 金流 → 後台
+            </span>
+            ，每一步都有狀態與資料。
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Outcome tag base (light) */
+  .outcome-tag--lite{
+    border: 1px solid rgba(148,163,184,.35);
+    background: rgba(255,255,255,.72);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .outcome-tag--lite:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 18px 60px rgba(2,6,23,.10);
+    background: rgba(255,255,255,.86);
+    border-color: rgba(99,102,241,.28);
+  }
+  .outcome-tag--lite:focus-visible{
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(99,102,241,.20), 0 18px 60px rgba(2,6,23,.10);
+    border-color: rgba(99,102,241,.35);
+  }
+
+  /* active state (set by JS) */
+  .outcome-tag.is-active{
+    background: rgba(255,255,255,.92);
+    border-color: rgba(99,102,241,.40);
+    box-shadow: 0 18px 60px rgba(2,6,23,.12);
+  }
+</style>
+
+<script>
+  (function () {
+    const section = document.getElementById("outcome");
+    if (!section) return;
+
+    const slides = Array.from(section.querySelectorAll(".outcome-slide"));
+    const tags = Array.from(section.querySelectorAll(".outcome-tag"));
+    const urlEl = section.querySelector("#outcome-url");
+    const badgeEl = section.querySelector("#outcome-badge");
+
+    const meta = {
+      cart: { url: "yourproduct.com/store", badge: "加入購物車" },
+      pay:  { url: "pay.yourproduct.com",  badge: "付款成功" },
+      admin:{ url: "yourproduct.com/admin",badge: "後台出貨" },
+    };
+
+    function setActive(key) {
+      slides.forEach((el) => {
+        const isOn = el.getAttribute("data-slide") === key;
+        el.classList.toggle("opacity-100", isOn);
+        el.classList.toggle("scale-100", isOn);
+        el.classList.toggle("pointer-events-none", !isOn);
+
+        el.classList.toggle("opacity-0", !isOn);
+        el.classList.toggle("scale-[0.98]", !isOn);
+      });
+
+      tags.forEach((btn) => {
+        const on = btn.getAttribute("data-target") === key;
+        btn.classList.toggle("is-active", on);
+        btn.setAttribute("aria-selected", on ? "true" : "false");
+      });
+
+      if (meta[key]) {
+        if (urlEl) urlEl.textContent = meta[key].url;
+        if (badgeEl) badgeEl.textContent = meta[key].badge;
+      }
+    }
+
+    // default
+    setActive("cart");
+
+    // hover + focus + click
+    tags.forEach((btn) => {
+      const key = btn.getAttribute("data-target");
+      btn.addEventListener("mouseenter", () => setActive(key));
+      btn.addEventListener("focus", () => setActive(key));
+      btn.addEventListener("click", () => setActive(key));
+    });
+
+    // keyboard: arrow up/down to move
+    section.addEventListener("keydown", (e) => {
+      if (!["ArrowUp", "ArrowDown"].includes(e.key)) return;
+      const activeIndex = tags.findIndex((b) => b.getAttribute("aria-selected") === "true");
+      const next = e.key === "ArrowDown" ? activeIndex + 1 : activeIndex - 1;
+      const idx = (next + tags.length) % tags.length;
+      tags[idx].focus();
+      e.preventDefault();
+    });
+  })();
+</script>
+
+
+
+
+<!-- Teaching Method Section (simplified left copy, keep right radar) -->
+<section id="how-we-teach" class="py-24 border-t relative overflow-hidden" style="border-color: var(--brand-border);">
+  <!-- Soft background glow (light) -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute left-1/2 top-10 -translate-x-1/2 w-[760px] h-[760px] rounded-full blur-3xl opacity-70"
+         style="background: radial-gradient(circle at 35% 35%, rgba(37,99,235,.16), transparent 62%),
+                        radial-gradient(circle at 70% 30%, rgba(124,58,237,.14), transparent 64%);"></div>
+    <div class="absolute left-1/2 bottom-0 -translate-x-1/2 w-[640px] h-[640px] rounded-full blur-3xl opacity-55"
+         style="background: radial-gradient(circle at 45% 60%, rgba(99,102,241,.12), transparent 62%);"></div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+    <!-- Title -->
+    <div class="text-center mb-14 sm:mb-16">
+      <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold glass-lite shadow-soft">
+        <span class="inline-flex h-2 w-2 rounded-full"
+              style="background: linear-gradient(135deg, rgba(16,185,129,1), rgba(37,99,235,1));"></span>
+        <span style="color: var(--brand-muted);">教學方法</span>
+      </span>
+
+      <h2 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
+        這堂課教的不是「做出一個網站」<br class="hidden sm:block" />
+        <span class="gradient-text">而是怎麼帶著 AI 完成事情</span>
+      </h2>
+
+      <p class="mt-4 text-base sm:text-lg max-w-3xl mx-auto leading-relaxed" style="color: var(--brand-muted);">
+        你會學會判斷、選擇、修正、整合：知道什麼時候該交給 AI，什麼時候需要你下決策。
+      </p>
+    </div>
+
+    <!-- Radar + Modules -->
+    <div class="grid lg:grid-cols-12 gap-10 items-stretch">
+
+      
+
+      <!-- Right: Radar visualization (kept as-is) -->
+      <div class="lg:col-span-12">
+
+          
+
+        <div class="rounded-3xl p-6 sm:p-8 relative overflow-hidden h-full glass-lite shadow-soft border"
+             style="border-color: var(--brand-border);">
+
+           <h3 class="text-center text-2xl sm:text-3xl font-extrabold leading-tight">
+            一套能反覆套用的完成流程
+          </h3>
+
+          <div class="mt-5 rounded-2xl p-5 border bg-white/60 w-[50%] mx-auto"
+               style="border-color: var(--brand-border);">
+            <div class="text-sm sm:text-base leading-relaxed" style="color: var(--brand-muted);">
+              你會學到一套可重複套用在任何專案的方式：<br class="hidden sm:block" />
+              <span class="font-semibold" style="color: var(--brand-text);">
+                看懂架構 → 設計流程 → 寫對 Prompt → 快速除錯 → 選對工具 → 串接測試 → 上線驗證
+              </span>
+            </div>
+          </div>
+
+          <!-- Center core -->
+          <div class="relative mx-auto w-full max-w-[640px] aspect-square">
+
+            <!-- rings (light) -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-[92%] h-[92%] rounded-full border" style="border-color: rgba(148,163,184,.35);"></div>
+            </div>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-[70%] h-[70%] rounded-full border" style="border-color: rgba(148,163,184,.28);"></div>
+            </div>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-[46%] h-[46%] rounded-full border" style="border-color: rgba(148,163,184,.22);"></div>
+            </div>
+
+            <!-- cross lines (light) -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-full h-[1px]" style="background: rgba(148,163,184,.22);"></div>
+            </div>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="h-full w-[1px]" style="background: rgba(148,163,184,.22);"></div>
+            </div>
+            <div class="absolute inset-0 flex items-center justify-center rotate-45">
+              <div class="w-full h-[1px]" style="background: rgba(148,163,184,.18);"></div>
+            </div>
+            <div class="absolute inset-0 flex items-center justify-center -rotate-45">
+              <div class="w-full h-[1px]" style="background: rgba(148,163,184,.18);"></div>
+            </div>
+
+            <!-- center card (light core) -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="relative rounded-3xl p-6 sm:p-7 text-center w-[68%] sm:w-[58%] border bg-white/70 backdrop-blur-md"
+                   style="border-color: var(--brand-border);">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border bg-white/70 text-xs"
+                     style="border-color: var(--brand-border); color: var(--brand-muted);">
+                  <span class="inline-flex h-2 w-2 rounded-full"
+                        style="background: linear-gradient(135deg, var(--brand-primary2), var(--brand-accent));"></span>
+                  核心訓練
+                </div>
+
+                <div class="mt-4 text-xl sm:text-2xl font-extrabold leading-snug" style="color: var(--brand-text);">
+                  帶著 AI 完成產品
+                </div>
+                <div class="mt-2 text-sm" style="color: var(--brand-muted);">
+                  而不是被 AI 牽著走
+                </div>
+
+                <div class="mt-5 flex flex-wrap justify-center gap-2">
+                  <span class="chip-lite text-[11px]">可控協作</span>
+                  <span class="chip-lite text-[11px]">快速推進</span>
+                  <span class="chip-lite text-[11px]">可重複套用</span>
+                </div>
+
+                <!-- subtle glow -->
+                <div class="absolute -inset-6 -z-10 rounded-[28px] blur-2xl opacity-75"
+                     style="background: radial-gradient(circle at 35% 35%, rgba(37,99,235,.18), transparent 55%),
+                                    radial-gradient(circle at 70% 30%, rgba(124,58,237,.16), transparent 58%);"></div>
+              </div>
+            </div>
+
+            <!-- Modules (around) -->
+            <div class="radar-node absolute top-[4%] left-1/2 -translate-x-1/2">
+              <div class="node-card node-card--light">
+                <div class="node-ico node-ico--indigo"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <div class="node-title node-title--light">認識 AI 工具</div>
+                <div class="node-desc node-desc--light">知道什麼時候該用誰</div>
+              </div>
+            </div>
+
+            <div class="radar-node absolute top-[22%] right-[2%]">
+              <div class="node-card node-card--light">
+                <div class="node-ico node-ico--purple"><i class="fa-solid fa-sitemap"></i></div>
+                <div class="node-title node-title--light">技術架構理解</div>
+                <div class="node-desc node-desc--light">看得懂系統在幫哪一層</div>
+              </div>
+            </div>
+
+            <div class="radar-node absolute bottom-[18%] right-[6%]">
+              <div class="node-card node-card--light">
+                <div class="node-ico node-ico--blue"><i class="fa-solid fa-diagram-project"></i></div>
+                <div class="node-title node-title--light">設計重點</div>
+                <div class="node-desc node-desc--light">先把流程想清楚再開做</div>
+              </div>
+            </div>
+
+            <div class="radar-node absolute bottom-[4%] left-1/2 -translate-x-1/2">
+              <div class="node-card node-card--light">
+                <div class="node-ico node-ico--indigo"><i class="fa-solid fa-pen-to-square"></i></div>
+                <div class="node-title node-title--light">Prompt 怎麼寫</div>
+                <div class="node-desc node-desc--light">問得準，AI 才能交付</div>
+              </div>
+            </div>
+
+            <div class="radar-node absolute bottom-[18%] left-[6%]">
+              <div class="node-card node-card--light">
+                <div class="node-ico node-ico--amber"><i class="fa-solid fa-bug"></i></div>
+                <div class="node-title node-title--light">遇到錯誤怎麼辦</div>
+                <div class="node-desc node-desc--light">改問法 or 換工具的判斷</div>
+              </div>
+            </div>
+
+            <div class="radar-node absolute top-[22%] left-[2%]">
+              <div class="node-card node-card--light">
+                <div class="node-ico node-ico--emerald"><i class="fa-solid fa-rocket"></i></div>
+                <div class="node-title node-title--light">整合 × 測試 × 部署</div>
+                <div class="node-desc node-desc--light">快速驗證、再把它上線</div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="mt-8 text-center text-sm" style="color: var(--brand-muted);">
+            這些能力不是只用在這個專案，而是你之後每個點子都能直接套用。
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- Minimal slow reveal (add once globally) -->
+<style>
+  .reveal-slow { opacity: 0; transform: translateY(18px); transition: opacity 900ms ease, transform 900ms ease; will-change: opacity, transform; }
+  .reveal-slow.is-in { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 120ms; }
+  .reveal-delay-2 { transition-delay: 260ms; }
+  .reveal-delay-3 { transition-delay: 420ms; }
+
+  /* Radar nodes styles (light) */
+  .radar-node { opacity: 0; transform: translateY(10px) scale(.985); transition: opacity 900ms ease, transform 900ms ease; }
+  .radar-node.is-in { opacity: 1; transform: translateY(0) scale(1); }
+
+  .node-card{
+    width: 182px;
+    max-width: 42vw;
+    padding: 12px 12px;
+    border-radius: 18px;
+  }
+
+  .node-card--light{
+    border: 1px solid rgba(148,163,184,.35);
+    background: rgba(255,255,255,.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 18px 60px rgba(2,6,23,.10);
+  }
+
+  .node-ico{
+    width: 36px; height: 36px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    border: 1px solid rgba(148,163,184,.28);
+    background: rgba(255,255,255,.75);
+  }
+
+  .node-ico--blue   { color: rgb(37,99,235);  border-color: rgba(37,99,235,.20);  background: rgba(37,99,235,.08); }
+  .node-ico--indigo { color: rgb(79,70,229);  border-color: rgba(79,70,229,.20);  background: rgba(79,70,229,.08); }
+  .node-ico--purple { color: rgb(124,58,237); border-color: rgba(124,58,237,.20); background: rgba(124,58,237,.08); }
+  .node-ico--emerald{ color: rgb(16,185,129); border-color: rgba(16,185,129,.20); background: rgba(16,185,129,.08); }
+  .node-ico--amber  { color: rgb(245,158,11); border-color: rgba(245,158,11,.20); background: rgba(245,158,11,.10); }
+
+  .node-title--light{ font-weight: 800; color: var(--brand-text); font-size: 14px; line-height: 1.2; }
+  .node-desc--light { margin-top: 4px; color: var(--brand-muted); font-size: 12px; line-height: 1.35; }
+
+  /* Chips (light) */
+  .chip-lite{
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,.35);
+    background: rgba(255,255,255,.70);
+    color: rgba(30,41,59,.92);
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-slow, .radar-node { transition: none !important; opacity: 1 !important; transform: none !important; }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const section = document.querySelector("#how-we-teach");
+    if (!section) return;
+
+    const header = section.querySelector(".text-center");
+    const left = section.querySelector(".lg\\:col-span-5");
+    const right = section.querySelector(".lg\\:col-span-7");
+    const nodes = Array.from(section.querySelectorAll(".radar-node"));
+
+    if (header) header.classList.add("reveal-slow");
+    if (left)  left.classList.add("reveal-slow","reveal-delay-1");
+    if (right) right.classList.add("reveal-slow","reveal-delay-2");
+
+    nodes.forEach((el, i) => {
+      el.style.transitionDelay = (220 + i * 90) + "ms";
+    });
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-in");
+        io.unobserve(entry.target);
+      });
+    }, { threshold: 0.15 });
+
+    [header, left, right].filter(Boolean).forEach(el => io.observe(el));
+    nodes.forEach(el => io.observe(el));
+  });
+</script>
+
+
+<!-- Who This Course Is For -->
+<section id="who-this-is-for" class="py-24 border-t" style="border-color: var(--brand-border);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Title -->
+    <div class="text-center mb-14">
+      <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold glass-lite shadow-soft">
+        <span class="inline-flex h-2 w-2 rounded-full"
+              style="background: linear-gradient(135deg, rgba(37,99,235,1), rgba(124,58,237,1));"></span>
+        <span style="color: var(--brand-muted);">課程適合對象</span>
+      </span>
+
+      <h2 class="text-4xl sm:text-5xl font-extrabold mt-6" style="color: var(--brand-text);">
+        這堂課，<br />
+        <span class="gradient-text">適不適合你？</span>
+      </h2>
+    </div>
+
+    <!-- Compare Grid -->
+    <div class="grid md:grid-cols-2 gap-8">
+
+      <!-- Suitable -->
+      <div class="rounded-3xl border p-8 glass-lite shadow-soft" style="border-color: var(--brand-border);">
+        <div class="flex items-center gap-3 mb-6">
+          <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border"
+                style="background: rgba(16,185,129,.10); border-color: rgba(16,185,129,.25); color: rgb(16,185,129);">
+            <i class="fa-solid fa-check"></i>
+          </span>
+          <h3 class="text-xl font-extrabold" style="color: var(--brand-text);">
+            這堂課適合你，如果你是
+          </h3>
+        </div>
+
+        <ul class="space-y-5">
+          <li class="flex gap-4">
+            <span class="mt-1 text-sm" style="color: rgba(16,185,129,.95);">●</span>
+            <div>
+              <div class="font-semibold" style="color: var(--brand-text);">
+                已經用過 AI 或 Vibe Coding
+              </div>
+              <div class="text-sm mt-1 leading-relaxed" style="color: var(--brand-muted);">
+                做過網站、頁面或小工具，但卡在「接下來怎麼變成真正能用的系統」
+              </div>
+            </div>
+          </li>
+
+          <li class="flex gap-4">
+            <span class="mt-1 text-sm" style="color: rgba(16,185,129,.95);">●</span>
+            <div>
+              <div class="font-semibold" style="color: var(--brand-text);">
+                有一個想實現的點子
+              </div>
+              <div class="text-sm mt-1 leading-relaxed" style="color: var(--brand-muted);">
+                想做成課程平台、服務網站或內部工具，不想只停在 Demo 階段
+              </div>
+            </div>
+          </li>
+
+          <li class="flex gap-4">
+            <span class="mt-1 text-sm" style="color: rgba(16,185,129,.95);">●</span>
+            <div>
+              <div class="font-semibold" style="color: var(--brand-text);">
+                看得懂基本程式邏輯
+              </div>
+              <div class="text-sm mt-1 leading-relaxed" style="color: var(--brand-muted);">
+                但對後端、會員、金流與部署整合不熟
+              </div>
+            </div>
+          </li>
+
+          <li class="flex gap-4">
+            <span class="mt-1 text-sm" style="color: rgba(16,185,129,.95);">●</span>
+            <div>
+              <div class="font-semibold" style="color: var(--brand-text);">
+                在意的是「能不能完成一個產品」
+              </div>
+              <div class="text-sm mt-1 leading-relaxed" style="color: var(--brand-muted);">
+                而不是只學某一個語言或工具
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Not Suitable -->
+      <div class="rounded-3xl border p-8 glass-lite shadow-soft" style="border-color: var(--brand-border);">
+        <div class="flex items-center gap-3 mb-6">
+          <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border"
+                style="background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.25); color: rgb(239,68,68);">
+            <i class="fa-solid fa-xmark"></i>
+          </span>
+          <h3 class="text-xl font-extrabold" style="color: var(--brand-text);">
+            這堂課可能不適合你，如果你是
+          </h3>
+        </div>
+
+        <ul class="space-y-5">
+          <li class="flex gap-4">
+            <span class="mt-1 text-sm" style="color: rgba(239,68,68,.95);">●</span>
+            <div class="leading-relaxed" style="color: var(--brand-muted);">
+              完全沒接觸過任何程式或邏輯概念
+            </div>
+          </li>
+
+          <li class="flex gap-4">
+            <span class="mt-1 text-sm" style="color: rgba(239,68,68,.95);">●</span>
+            <div class="leading-relaxed" style="color: var(--brand-muted);">
+              只想看影片，不打算實際動手做
+            </div>
+          </li>
+
+          <li class="flex gap-4">
+            <span class="mt-1 text-sm" style="color: rgba(239,68,68,.95);">●</span>
+            <div class="leading-relaxed" style="color: var(--brand-muted);">
+              只對單一語法或框架細節有興趣
+            </div>
+          </li>
+
+          <li class="flex gap-4">
+            <span class="mt-1 text-sm" style="color: rgba(239,68,68,.95);">●</span>
+            <div class="leading-relaxed" style="color: var(--brand-muted);">
+              希望被一步一步牽著，不想自己做判斷與決策
+            </div>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Bottom note -->
+    <div class="mt-12 text-center text-sm" style="color: var(--brand-muted);">
+      這堂課重視的是「完成能力」，而不是被動學習。
+    </div>
+
+  </div>
+</section>
+
+
+
+
+  <!-- Tech Stack -->
+<!-- Stack / Tools -->
+<section id="stack" class="py-24 border-t" style="border-color: var(--brand-border);">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Title -->
+    <div class="text-center mb-16">
+      <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold glass-lite shadow-soft">
+        <span class="inline-flex h-2 w-2 rounded-full"
+              style="background: linear-gradient(135deg, rgba(37,99,235,1), rgba(124,58,237,1));"></span>
+        <span style="color: var(--brand-muted);">教學工具與框架</span>
+      </span>
+
+      <h2 class="mt-5 text-3xl sm:text-4xl font-extrabold tracking-tight" style="color: var(--brand-text);">
+        課程中實際會用到的工具
+      </h2>
+      <p class="mt-4 max-w-2xl mx-auto" style="color: var(--brand-muted);">
+        不追新、不堆疊，只選擇能幫你把產品完成的工具組合
+      </p>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      <!-- Cursor -->
+      <div class="stack-card glass-lite p-7 rounded-2xl border shadow-soft">
+        <div class="stack-ico">
+          <img src="./img/CUBE_2D_LIGHT.svg" alt="Cursor" class="stack-ico-media" />
+        </div>
+        <h3 class="text-lg font-bold mt-4 mb-2" style="color: var(--brand-text);">Cursor</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--brand-muted);">
+          AI 輔助開發編輯器。課程中會示範如何用正確的 Prompt，讓 AI 幫你寫、改、理解程式碼，而不是亂產。
+        </p>
+      </div>
+
+      <!-- ChatGPT -->
+      <div class="stack-card glass-lite p-7 rounded-2xl border shadow-soft">
+        <div class="stack-ico">
+          <img src="./img/ChatGPT-Logo.png" alt="ChatGPT" class="stack-ico-media" />
+        </div>
+        <h3 class="text-lg font-bold mt-4 mb-2" style="color: var(--brand-text);">ChatGPT</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--brand-muted);">
+          協助你拆解需求、設計流程、思考系統架構與錯誤排查，而不只是寫程式碼。
+        </p>
+      </div>
+
+      <!-- Next.js -->
+      <div class="stack-card glass-lite p-7 rounded-2xl border shadow-soft">
+        <div class="stack-ico">
+          <svg class="stack-ico-media" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" aria-hidden="true">
+            <circle cx="90" cy="90" r="90" fill="black"></circle>
+            <path d="M149.508 157.52L69.142 54H54V125.97H66.1136V69.3836L139.999 164.845C143.333 162.614 146.509 160.165 149.508 157.52Z"
+                  fill="white" fill-opacity="0.92"></path>
+            <rect x="115" y="54" width="12" height="72" fill="white" fill-opacity="0.6"></rect>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold mt-4 mb-2" style="color: var(--brand-text);">Next.js</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--brand-muted);">
+          現代前後端整合框架。課程中不鑽語法，而是用它來完成實際可部署的產品結構。
+        </p>
+      </div>
+
+      <!-- shadcn/ui -->
+      <div class="stack-card glass-lite p-7 rounded-2xl border shadow-soft">
+        <div class="stack-ico">
+          <svg class="stack-ico-media" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+            <rect width="256" height="256" fill="none"></rect>
+            <line x1="208" y1="128" x2="128" y2="208" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></line>
+            <line x1="192" y1="40" x2="40" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></line>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold mt-4 mb-2" style="color: var(--brand-text);">shadcn/ui</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--brand-muted);">
+          可組合的 UI 元件系統。幫助你快速建立一致、可維護的介面，而不是自己從零刻樣式。
+        </p>
+      </div>
+
+      <!-- Supabase -->
+      <div class="stack-card glass-lite p-7 rounded-2xl border shadow-soft">
+        <div class="stack-ico">
+          <svg class="stack-ico-media" viewBox="0 0 109 113" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M63.7076 110.284C60.8481 113.885 55.0502 111.912 54.9813 107.314L53.9738 40.0627L99.1935 40.0627C107.384 40.0627 111.952 49.5228 106.859 55.9374L63.7076 110.284Z" fill="#3ECF8E"/>
+            <path d="M45.317 2.07103C48.1765 -1.53037 53.9745 0.442937 54.0434 5.041L54.4849 72.2922H9.83113C1.64038 72.2922 -2.92775 62.8321 2.1655 56.4175L45.317 2.07103Z" fill="#249361"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold mt-4 mb-2" style="color: var(--brand-text);">Supabase</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--brand-muted);">
+          負責會員、資料與權限。課程中會教你怎麼設計資料結構與流程，而不是只會點後台。
+        </p>
+      </div>
+
+      <!-- Vercel -->
+      <div class="stack-card glass-lite p-7 rounded-2xl border shadow-soft">
+        <div class="stack-ico">
+          <svg class="stack-ico-media" viewBox="0 0 76 65" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" fill="#111827"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold mt-4 mb-2" style="color: var(--brand-text);">Vercel</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--brand-muted);">
+          部署與正式上線平台。你會實際完成一次「從本機到上線」的完整流程，而不是停在 Demo。
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Bottom note -->
+    <div class="mt-14 text-center text-sm" style="color: var(--brand-muted);">
+      課程重點不是工具本身，而是你如何選擇、組合、替換它們來完成產品。
+    </div>
+
+  </div>
+</section>
+
+<style>
+  /* ---- Stack: light + consistent icons ---- */
+  .glass-lite{
+    background: rgba(255,255,255,.72);
+    border: 1px solid rgba(30,41,59,.10);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .shadow-soft{ box-shadow: 0 18px 50px rgba(15,23,42,.08); }
+
+  .stack-card{
+    border-color: rgba(30,41,59,.10);
+    transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+  }
+  .stack-card:hover{
+    border-color: rgba(124,58,237,.35);
+    box-shadow: 0 22px 60px rgba(37,99,235,.10);
+    transform: translateY(-2px);
+  }
+
+  /* Fixed icon box (all icons same) */
+  .stack-ico{
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(30,41,59,.10);
+    background: rgba(37,99,235,.06);
+    color: rgba(37,99,235,.95); /* for currentColor SVG like shadcn */
+  }
+
+  /* Force same size for img/svg */
+  .stack-ico-media{
+    width: 28px;
+    height: 28px;
+    display: block;
+    object-fit: contain;
+  }
+</style>
+
+
+<!-- Curriculum Section -->
+<!-- Curriculum Section (FULL) -->
+<!-- Curriculum Section (UPDATED: clearer dark theme + better RWD) -->
+<section id="curriculum" class="py-20 sm:py-24 bg-brand-dark relative border-t border-white/10">
+  <div class="absolute inset-0 bg-gradient-to-b from-brand-dark to-black/80 pointer-events-none"></div>
+
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+    <!-- Title -->
+    <div class="text-center mb-12 sm:mb-14">
+      <span class="text-brand-accent font-bold tracking-wider text-sm uppercase">Curriculum</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold mt-2 text-white">實戰課程大綱</h2>
+      <p class="mt-3 curriculum-muted">
+        以實作為核心，循序完成一套可實際營運的線上服務系統
+      </p>
+    </div>
+
+    <div class="space-y-4 sm:space-y-6">
+
+      <!-- Chapter 1 -->
+      <details class="group curriculum-card rounded-2xl border border-white/10 overflow-hidden">
+        <summary class="curriculum-summary cursor-pointer list-none p-4 sm:p-7" style="border-left:4px solid var(--brand-primary);">
+          <div class="flex items-start gap-4 sm:gap-6">
+            <div class="flex-shrink-0">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-brand-primary/20 text-brand-primary flex items-center justify-center font-extrabold">
+                01
+              </div>
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="text-base sm:text-xl font-extrabold text-white leading-snug pr-2">
+                  Chapter 1｜產品系統架構與整體藍圖
+                </h3>
+                <div class="mt-0.5 curriculum-muted group-open:rotate-180 transition-transform flex-shrink-0">
+                  <i class="fa-solid fa-chevron-down"></i>
+                </div>
+              </div>
+
+              <div class="mt-2 flex flex-wrap items-center gap-2">
+                <span class="text-[12px] curriculum-muted">約 1 小時</span>
+                <span class="curriculum-chip inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/6 border border-white/12 text-xs sm:text-sm">
+                  本章重點：看懂整個系統，而不是急著動手
+                </span>
+              </div>
+            </div>
+          </div>
+        </summary>
+
+        <div class="px-4 sm:px-7 pb-5 sm:pb-7 pt-0">
+          <div class="h-px bg-white/10 mb-4 sm:mb-5"></div>
+          <ul class="space-y-2 text-sm leading-relaxed curriculum-readable">
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 線上服務系統的核心組成與角色分工</li>
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 前台、後台、會員、資料、金流的系統關係</li>
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 建立「產品完成導向」的系統視角</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- Chapter 2 -->
+      <details class="group curriculum-card rounded-2xl border border-white/10 overflow-hidden">
+        <summary class="curriculum-summary cursor-pointer list-none p-4 sm:p-7" style="border-left:4px solid var(--brand-success);">
+          <div class="flex items-start gap-4 sm:gap-6">
+            <div class="flex-shrink-0">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-brand-success/20 text-brand-success flex items-center justify-center font-extrabold">
+                02
+              </div>
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="text-base sm:text-xl font-extrabold text-white leading-snug pr-2">
+                  Chapter 2｜前台流程設計與 Vibe Coding 實作
+                </h3>
+                <div class="mt-0.5 curriculum-muted group-open:rotate-180 transition-transform flex-shrink-0">
+                  <i class="fa-solid fa-chevron-down"></i>
+                </div>
+              </div>
+
+              <div class="mt-2 flex flex-wrap items-center gap-2">
+                <span class="text-[12px] curriculum-muted">約 2 小時</span>
+                <span class="curriculum-chip inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/6 border border-white/12 text-xs sm:text-sm">
+                  本章重點：前台不只是畫面，而是產品入口
+                </span>
+              </div>
+            </div>
+          </div>
+        </summary>
+
+        <div class="px-4 sm:px-7 pb-5 sm:pb-7 pt-0">
+          <div class="h-px bg-white/10 mb-4 sm:mb-5"></div>
+          <ul class="space-y-2 text-sm leading-relaxed curriculum-readable">
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 將產品想法轉化為可操作的前台流程</li>
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 透過 Vibe Coding 與 AI 協作完成實際介面</li>
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 為後續系統整合預留正確結構</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- Chapter 3 -->
+      <details class="group curriculum-card rounded-2xl border border-white/10 overflow-hidden">
+        <summary class="curriculum-summary cursor-pointer list-none p-4 sm:p-7" style="border-left:4px solid var(--brand-accent);">
+          <div class="flex items-start gap-4 sm:gap-6">
+            <div class="flex-shrink-0">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-brand-accent/20 text-brand-accent flex items-center justify-center font-extrabold">
+                03
+              </div>
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="text-base sm:text-xl font-extrabold text-white leading-snug pr-2">
+                  Chapter 3｜會員機制與資料結構設計
+                </h3>
+                <div class="mt-0.5 curriculum-muted group-open:rotate-180 transition-transform flex-shrink-0">
+                  <i class="fa-solid fa-chevron-down"></i>
+                </div>
+              </div>
+
+              <div class="mt-2 flex flex-wrap items-center gap-2">
+                <span class="text-[12px] curriculum-muted">約 2 小時</span>
+                <span class="curriculum-chip inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/6 border border-white/12 text-xs sm:text-sm">
+                  本章重點：讓網站具備「記住使用者」的能力
+                </span>
+              </div>
+            </div>
+          </div>
+        </summary>
+
+        <div class="px-4 sm:px-7 pb-5 sm:pb-7 pt-0">
+          <div class="h-px bg-white/10 mb-4 sm:mb-5"></div>
+          <ul class="space-y-2 text-sm leading-relaxed curriculum-readable">
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 使用者註冊、登入與基本權限模型</li>
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 系統所需資料結構與狀態管理邏輯</li>
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 前後台資料流與系統狀態串接</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- Chapter 4 -->
+      <details class="group curriculum-card rounded-2xl border border-white/10 overflow-hidden">
+        <summary class="curriculum-summary cursor-pointer list-none p-4 sm:p-7" style="border-left:4px solid rgba(253,224,71,.85);">
+          <div class="flex items-start gap-4 sm:gap-6">
+            <div class="flex-shrink-0">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-yellow-400/20 text-yellow-300 flex items-center justify-center font-extrabold">
+                04
+              </div>
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="text-base sm:text-xl font-extrabold text-white leading-snug pr-2">
+                  Chapter 4｜金流整合與商業流程建模
+                </h3>
+                <div class="mt-0.5 curriculum-muted group-open:rotate-180 transition-transform flex-shrink-0">
+                  <i class="fa-solid fa-chevron-down"></i>
+                </div>
+              </div>
+
+              <div class="mt-2 flex flex-wrap items-center gap-2">
+                <span class="text-[12px] curriculum-muted">約 1.5 小時</span>
+                <span class="curriculum-chip inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/6 border border-white/12 text-xs sm:text-sm">
+                  本章重點：讓產品正式具備收費能力
+                </span>
+              </div>
+            </div>
+          </div>
+        </summary>
+
+        <div class="px-4 sm:px-7 pb-5 sm:pb-7 pt-0">
+          <div class="h-px bg-white/10 mb-4 sm:mb-5"></div>
+          <ul class="space-y-2 text-sm leading-relaxed curriculum-readable">
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 實務金流流程的設計與整合</li>
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 訂單、付款與狀態變化的系統邏輯</li>
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 將商業需求轉化為可運作的系統流程</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- Chapter 5 -->
+      <details class="group curriculum-card rounded-2xl border border-white/10 overflow-hidden">
+        <summary class="curriculum-summary cursor-pointer list-none p-4 sm:p-7" style="border-left:4px solid rgba(110,231,183,.85);">
+          <div class="flex items-start gap-4 sm:gap-6">
+            <div class="flex-shrink-0">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-400/20 text-emerald-300 flex items-center justify-center font-extrabold">
+                05
+              </div>
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="text-base sm:text-xl font-extrabold text-white leading-snug pr-2">
+                  Chapter 5｜後台管理系統與營運機制
+                </h3>
+                <div class="mt-0.5 curriculum-muted group-open:rotate-180 transition-transform flex-shrink-0">
+                  <i class="fa-solid fa-chevron-down"></i>
+                </div>
+              </div>
+
+              <div class="mt-2 flex flex-wrap items-center gap-2">
+                <span class="text-[12px] curriculum-muted">約 2 小時</span>
+                <span class="curriculum-chip inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/6 border border-white/12 text-xs sm:text-sm">
+                  本章重點：產品不只完成，而是能持續運作
+                </span>
+              </div>
+            </div>
+          </div>
+        </summary>
+
+        <div class="px-4 sm:px-7 pb-5 sm:pb-7 pt-0">
+          <div class="h-px bg-white/10 mb-4 sm:mb-5"></div>
+          <ul class="space-y-2 text-sm leading-relaxed curriculum-readable">
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 後台管理架構與權限設計原則</li>
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 使用者、內容、訂單的管理流程</li>
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 系統維運與可擴充性的思考方式</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- Chapter 6 -->
+      <details class="group curriculum-card rounded-2xl border border-white/10 overflow-hidden">
+        <summary class="curriculum-summary cursor-pointer list-none p-4 sm:p-7" style="border-left:4px solid rgba(125,211,252,.85);">
+          <div class="flex items-start gap-4 sm:gap-6">
+            <div class="flex-shrink-0">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-sky-400/20 text-sky-300 flex items-center justify-center font-extrabold">
+                06
+              </div>
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="text-base sm:text-xl font-extrabold text-white leading-snug pr-2">
+                  Chapter 6｜部署流程與正式上線實務
+                </h3>
+                <div class="mt-0.5 curriculum-muted group-open:rotate-180 transition-transform flex-shrink-0">
+                  <i class="fa-solid fa-chevron-down"></i>
+                </div>
+              </div>
+
+              <div class="mt-2 flex flex-wrap items-center gap-2">
+                <span class="text-[12px] curriculum-muted">約 1.5 小時</span>
+                <span class="curriculum-chip inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/6 border border-white/12 text-xs sm:text-sm">
+                  本章重點：完成從開發到上線的最後一哩路
+                </span>
+              </div>
+            </div>
+          </div>
+        </summary>
+
+        <div class="px-4 sm:px-7 pb-5 sm:pb-7 pt-0">
+          <div class="h-px bg-white/10 mb-4 sm:mb-5"></div>
+          <ul class="space-y-2 text-sm leading-relaxed curriculum-readable">
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 將整套系統部署至正式環境</li>
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 常見部署問題與實務設定</li>
+            <li class="flex gap-2"><span class="text-brand-success">•</span> 確保系統可被實際使用與分享</li>
+          </ul>
+        </div>
+      </details>
+
+    </div>
+
+    <!-- Footer Summary -->
+    <div class="mt-12 sm:mt-14 text-center curriculum-muted text-sm">
+      ⏱️ 課程總時數：約 10 小時｜全程以實作與流程導向為核心，聚焦「完成可營運產品」的關鍵能力
+    </div>
+
+  </div>
+</section>
+
+<style>
+  /* ---- Curriculum: dark readable system ---- */
+  #curriculum {
+    --cur-text: rgba(255,255,255,.86);
+    --cur-muted: rgba(255,255,255,.62);
+    --cur-chip: rgba(255,255,255,.92);
+  }
+
+  /* Remove default marker */
+  #curriculum summary::-webkit-details-marker { display: none; }
+  #curriculum summary { -webkit-tap-highlight-color: transparent; }
+
+  /* Make the glass card more readable on dark gradients */
+  #curriculum .curriculum-card {
+    background: rgba(255,255,255,.06);      /* was often too light/flat depending on your glass-card */
+    backdrop-filter: blur(12px);
+  }
+
+  /* Summary hover/open: slight lift helps legibility */
+  #curriculum .curriculum-summary {
+    position: relative;
+    transition: background 220ms ease, transform 220ms ease;
+  }
+  #curriculum details:hover .curriculum-summary {
+    background: rgba(255,255,255,.03);
+  }
+  #curriculum details[open] .curriculum-summary {
+    background: rgba(255,255,255,.04);
+  }
+
+  /* Text helpers */
+  #curriculum .curriculum-readable { color: var(--cur-text); }
+  #curriculum .curriculum-muted { color: var(--cur-muted); }
+
+  /* Chip: bump contrast + tighten on mobile so it doesn't become a huge block */
+  #curriculum .curriculum-chip {
+    color: var(--cur-chip);
+    background: rgba(255,255,255,.06);
+    border-color: rgba(255,255,255,.14);
+    line-height: 1.35;
+    max-width: 100%;
+  }
+
+  /* RWD: prevent "too big a block" on small screens */
+  @media (max-width: 420px) {
+    #curriculum .curriculum-chip {
+      padding: 8px 10px !important;
+      border-radius: 14px !important;
+      font-size: 12px !important;
+    }
+  }
+
+  /* Improve list readability a bit */
+  #curriculum ul li { color: var(--cur-text); }
+</style>
+
+
+
+
+
+  <!-- UPDATED Pricing Section (3 plans) -->
+<!-- Pricing Section (UPDATED: light theme) -->
+<section id="pricing" class="py-24 relative overflow-hidden border-t border-black/10 bg-white">
+  <!-- soft glow -->
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[760px] h-[760px] bg-brand-primary/10 rounded-full blur-3xl -z-10"></div>
+  <div class="absolute -top-24 right-[-120px] w-[520px] h-[520px] bg-brand-accent/10 rounded-full blur-3xl -z-10"></div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="text-center mb-14">
+      <h2 class="text-4xl font-extrabold mb-5 text-gray-900">課程方案與費用</h2>
+      <p class="text-gray-600">
+        你可以依照你想走的速度與需要的支援程度，<br class="hidden sm:block" />
+        選擇最適合的方案。
+      </p>
+
+      <!-- Early Bird Banner -->
+      <div class="mt-6 inline-flex items-center gap-3 px-5 py-3 rounded-2xl border border-black/10 bg-white/70 backdrop-blur">
+        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-accent text-white text-xs font-extrabold">
+          <span class="inline-flex h-2 w-2 rounded-full bg-white/60"></span>
+          預購早鳥
+        </span>
+        <div class="text-sm text-gray-700">
+          <span class="font-extrabold text-gray-900">1/20</span> 以前享早鳥優惠價（名額/期限到期即恢復原價）
+        </div>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-6 items-stretch">
+
+      <!-- Basic -->
+      <div class="pricing-card rounded-3xl p-8 border border-black/10 bg-white hover:bg-black/[0.02] transition-colors">
+        <div class="flex items-center justify-between">
+          <div class="text-sm font-bold text-sky-700">基礎方案</div>
+          <div class="text-xs px-3 py-1 rounded-full border border-black/10 text-gray-600 bg-white">完整實作課程</div>
+        </div>
+
+        <h3 class="text-2xl font-extrabold mt-4 text-gray-900">完整實作課程</h3>
+        <p class="text-gray-600 mt-3 leading-relaxed">適合：想獨立完成一套系統的人</p>
+
+        <ul class="mt-6 space-y-3 text-gray-700">
+          <li class="flex gap-3"><i class="fa-solid fa-check pricing-ico text-emerald-600 mt-1"></i> 全 10 小時完整課程內容</li>
+          <li class="flex gap-3"><i class="fa-solid fa-check pricing-ico text-emerald-600 mt-1"></i> 從系統藍圖到正式上線的完整流程</li>
+          <li class="flex gap-3"><i class="fa-solid fa-check pricing-ico text-emerald-600 mt-1"></i> Vibe Coding × AI 協作實作示範</li>
+          <li class="flex gap-3"><i class="fa-solid fa-check pricing-ico text-emerald-600 mt-1"></i> 可重複觀看的課程影片</li>
+        </ul>
+
+        <div class="mt-8 p-5 rounded-2xl bg-gray-50 border border-black/10">
+          <div class="flex items-center justify-between gap-3">
+            <div class="text-gray-600 text-sm">早鳥價（1/20 前）</div>
+            <span class="text-[11px] px-2.5 py-1 rounded-full border border-emerald-600/20 bg-emerald-600/10 text-emerald-800">
+              省下 NT$ 7,820
+            </span>
+          </div>
+
+          <div class="mt-2 flex items-end gap-3 flex-wrap">
+            <div class="text-3xl font-extrabold text-gray-900">NT$ 3,980</div>
+            <div class="text-sm text-gray-500 line-through">原價 NT$ 11,800</div>
+          </div>
+        </div>
+
+        <p class="text-gray-600 mt-6 leading-relaxed">
+          這個方案，<br />
+          適合你已經準備好<br />
+          靠自己完成整套系統。
+        </p>
+
+        <button class="mt-7 w-full pricing-btn glow-button btn-primary text-white font-extrabold text-lg py-3.5 rounded-2xl hover:bg-black transition-colors">
+          立即預購 <i class="fa-solid fa-arrow-right pricing-ico ml-2"></i>
+        </button>
+      </div>
+
+      <!-- Advanced -->
+      <div class="pricing-card rounded-3xl p-8 border border-black/10 bg-white hover:bg-black/[0.02] transition-colors relative shadow-[0_18px_60px_rgba(0,0,0,.10)]">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-brand-accent text-white text-xs font-extrabold border border-black/10">
+          推薦
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="text-sm font-bold text-emerald-700">進階方案</div>
+          <div class="text-xs px-3 py-1 rounded-full border border-black/10 text-gray-600 bg-white">課程＋完整原始碼</div>
+        </div>
+
+        <h3 class="text-2xl font-extrabold mt-4 text-gray-900">課程＋完整原始碼</h3>
+        <p class="text-gray-600 mt-3 leading-relaxed">適合：想節省時間、對照實作的人</p>
+
+        <ul class="mt-6 space-y-3 text-gray-700">
+          <li class="flex gap-3"><i class="fa-solid fa-check pricing-ico text-emerald-600 mt-1"></i> 包含「完整實作課程」所有內容</li>
+          <li class="flex gap-3"><i class="fa-solid fa-check pricing-ico text-emerald-600 mt-1"></i> 全套前後台實作原始碼</li>
+          <li class="flex gap-3"><i class="fa-solid fa-check pricing-ico text-emerald-600 mt-1"></i> 可直接運行、可自行修改與延伸</li>
+          <li class="flex gap-3"><i class="fa-solid fa-check pricing-ico text-emerald-600 mt-1"></i> 範例架構說明與關鍵註解</li>
+        </ul>
+
+        <div class="mt-8 p-5 rounded-2xl bg-gray-50 border border-black/10">
+          <div class="flex items-center justify-between gap-3">
+            <div class="text-gray-600 text-sm">早鳥價（1/20 前）</div>
+            <span class="text-[11px] px-2.5 py-1 rounded-full border border-emerald-600/20 bg-emerald-600/10 text-emerald-800">
+              省下 NT$ 12,820
+            </span>
+          </div>
+
+          <div class="mt-2 flex items-end gap-3 flex-wrap">
+            <div class="text-3xl font-extrabold text-gray-900">NT$ 5,980</div>
+            <div class="text-sm text-gray-500 line-through">原價 NT$ 18,800</div>
+          </div>
+        </div>
+
+        <p class="text-gray-600 mt-6 leading-relaxed">
+          這個方案，<br />
+          適合你想專注在<br />
+          理解架構與流程，而不是從零對照。
+        </p>
+
+        <button class="mt-7 w-full pricing-btn glow-button btn-primary text-white font-extrabold text-lg py-3.5 rounded-2xl hover:bg-black transition-colors">
+          立即預購 <i class="fa-solid fa-arrow-right pricing-ico ml-2"></i>
+        </button>
+      </div>
+
+      <!-- VIP -->
+      <div class="pricing-card rounded-3xl p-8 border border-black/10 bg-white hover:bg-black/[0.02] transition-colors">
+        <div class="flex items-center justify-between">
+          <div class="text-sm font-bold text-amber-700">專屬方案</div>
+          <div class="text-xs px-3 py-1 rounded-full border border-black/10 text-gray-600 bg-white">課程＋原始碼＋一對一</div>
+        </div>
+
+        <h3 class="text-2xl font-extrabold mt-4 text-gray-900">課程＋原始碼＋一對一諮詢</h3>
+        <p class="text-gray-600 mt-3 leading-relaxed">適合：想確保完成、快速落地的人</p>
+
+        <ul class="mt-6 space-y-3 text-gray-700">
+          <li class="flex gap-3"><i class="fa-solid fa-check pricing-ico text-emerald-600 mt-1"></i> 包含「進階方案」所有內容</li>
+          <li class="flex gap-3"><i class="fa-solid fa-check pricing-ico text-emerald-600 mt-1"></i> 一對一線上諮詢（8 次，每次 60 分鐘）</li>
+          <li class="flex gap-3"><i class="fa-solid fa-check pricing-ico text-emerald-600 mt-1"></i> 協助你解決實作卡關與專案問題</li>
+          <li class="flex gap-3"><i class="fa-solid fa-check pricing-ico text-emerald-600 mt-1"></i> 針對你實際想做的產品給予建議</li>
+        </ul>
+
+        <div class="mt-8 p-5 rounded-2xl bg-gray-50 border border-black/10">
+          <div class="flex items-center justify-between gap-3">
+            <div class="text-gray-600 text-sm">早鳥價（1/20 前）</div>
+            <span class="text-[11px] px-2.5 py-1 rounded-full border border-emerald-600/20 bg-emerald-600/10 text-emerald-800">
+              省下 NT$ 10,000
+            </span>
+          </div>
+
+          <div class="mt-2 flex items-end gap-3 flex-wrap">
+            <div class="text-3xl font-extrabold text-gray-900">
+              NT$ 29,800 <span class="text-sm text-gray-500 font-normal">（名額有限）</span>
+            </div>
+            <div class="text-sm text-gray-500 line-through">原價 NT$ 39,800</div>
+          </div>
+        </div>
+
+        <p class="text-gray-600 mt-6 leading-relaxed">
+          這個方案，<br />
+          適合你已經有明確目標，<br />
+          希望有人陪你把事情做到完成。
+        </p>
+
+        <button class="mt-7 w-full pricing-btn glow-button btn-primary text-white font-extrabold text-lg py-3.5 rounded-2xl hover:bg-black transition-colors">
+          立即預購 <i class="fa-solid fa-arrow-right pricing-ico ml-2"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <div class="mt-12 text-center text-sm text-gray-600 flex flex-wrap justify-center gap-5">
+      <span class="inline-flex items-center gap-2"><i class="fa-solid fa-shield-halved pricing-ico"></i> 30天滿意保證</span>
+      <span class="inline-flex items-center gap-2"><i class="fa-solid fa-bolt pricing-ico"></i> 付款後即刻開通</span>
+      <span class="inline-flex items-center gap-2"><i class="fa-solid fa-infinity pricing-ico"></i> 課程可重複觀看</span>
+    </div>
+
+  </div>
+</section>
+
+<style>
+  /* Pricing: light readability + consistent icons */
+  #pricing .pricing-card { backdrop-filter: blur(10px); }
+  #pricing .pricing-ico{
+    width: 1.05em;
+    height: 1.05em;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 1.05em;
+  }
+
+  /* Light-mode "glass" feel without dark wash */
+  #pricing .pricing-card{
+    background: rgba(255,255,255,.86);
+  }
+
+  /* Optional: reduce heavy glow-button effect on light background (if your glow-button is too neon) */
+  #pricing .pricing-btn{
+    box-shadow: 0 14px 40px rgba(0,0,0,.10);
+  }
+</style>
+
+<section id="timeline" class="py-20 border-t border-black/5 bg-white relative">
+  <!-- soft background glow -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-brand-primary/10 rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="max-w-6xl mx-auto px-6 relative z-10">
+
+    <!-- Title -->
+    <div class="text-center mb-12">
+      <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-black/10 bg-black/5 text-sm text-brand-primary font-semibold">
+        預購時程
+      </span>
+      <h2 class="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900">
+        課程上線與優惠時間，一次看懂
+      </h2>
+      <p class="mt-3 text-gray-600 text-base">
+        分段上線，每次更新都會 Email 通知
+      </p>
+    </div>
+
+    <!-- Timeline Card -->
+    <div class="rounded-3xl border border-black/10 bg-white/80 backdrop-blur-xl p-8 shadow-sm">
+      <ol class="relative space-y-6">
+
+        <!-- Item -->
+        <li class="flex gap-5 items-center">
+          <span class="block w-3.5 h-3.5 rounded-full bg-brand-primary flex-shrink-0"></span>
+          <div class="flex-1 flex items-center justify-between flex-wrap gap-2">
+            <div class="font-semibold text-gray-900">早鳥優惠</div>
+            <div class="text-sm text-gray-600">即日起 ～ 1/20</div>
+          </div>
+        </li>
+
+        <li class="flex gap-5 items-center">
+          <span class="block w-3.5 h-3.5 rounded-full bg-sky-400 flex-shrink-0"></span>
+          <div class="flex-1 flex items-center justify-between flex-wrap gap-2">
+            <div class="font-semibold text-gray-900">晚鳥優惠</div>
+            <div class="text-sm text-gray-600">1/21 ～ 2/28</div>
+          </div>
+        </li>
+
+        <li class="flex gap-5 items-center">
+          <span class="block w-3.5 h-3.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+          <div class="flex-1 flex items-center justify-between flex-wrap gap-2">
+            <div class="font-semibold text-gray-900">上線第 1～3 單元</div>
+            <div class="text-sm text-gray-600">3/1</div>
+          </div>
+        </li>
+
+        <li class="flex gap-5 items-center">
+          <span class="block w-3.5 h-3.5 rounded-full bg-yellow-400 flex-shrink-0"></span>
+          <div class="flex-1 flex items-center justify-between flex-wrap gap-2">
+            <div class="font-semibold text-gray-900">上線第 4～6 單元</div>
+            <div class="text-sm text-gray-600">4/1</div>
+          </div>
+        </li>
+
+      </ol>
+    </div>
+
+    <!-- Note -->
+    <p class="mt-6 text-center text-sm text-gray-500">
+      每次課程上線都會寄送 Email 通知，不怕錯過
+    </p>
+
+  </div>
+</section>
+
+
+
+
+
+<section id="guarantee" class="py-16 border-t border-black/5 bg-white relative">
+  <!-- soft glow -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] bg-brand-primary/10 rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div class="grid lg:grid-cols-12 gap-6 items-stretch">
+
+      <!-- Left -->
+      <div class="lg:col-span-5">
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-black/10 bg-black/5 text-sm text-brand-primary font-semibold">
+          Learning Guarantee
+        </span>
+
+        <h3 class="mt-5 text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
+          不確定也沒關係，<br class="hidden sm:block" />
+          你不是一個人完成
+        </h3>
+
+        <p class="mt-4 text-gray-600 leading-relaxed">
+          這堂課不是看完就算，<br />
+          而是陪你把系統真的做出來。
+        </p>
+      </div>
+
+      <!-- Right -->
+      <div class="lg:col-span-7">
+        <div class="rounded-3xl p-7 sm:p-8 border border-black/10 bg-white/80 backdrop-blur-xl shadow-sm">
+
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="text-sm font-extrabold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-brand-primary"></i>
+                學習保障
+              </div>
+              <div class="mt-1 text-sm text-gray-500">
+                不會卡關、也不必硬撐
+              </div>
+            </div>
+
+            <div class="hidden sm:flex items-center gap-2 text-xs text-gray-500">
+              <span class="px-3 py-1 rounded-full border border-black/10 bg-black/5">安心購買</span>
+              <span class="px-3 py-1 rounded-full border border-black/10 bg-black/5">不限觀看</span>
+            </div>
+          </div>
+
+          <div class="mt-6 grid sm:grid-cols-2 gap-4">
+
+            <div class="rounded-2xl bg-black/5 border border-black/10 p-4">
+              <div class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-comments text-sky-500"></i>
+                可提問協助
+              </div>
+              <p class="mt-2 text-sm text-gray-600">
+                IG / Email 提問，給你明確方向
+              </p>
+            </div>
+
+            <div class="rounded-2xl bg-black/5 border border-black/10 p-4">
+              <div class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-infinity text-purple-500"></i>
+                不限觀看
+              </div>
+              <p class="mt-2 text-sm text-gray-600">
+                依你的節奏反覆實作
+              </p>
+            </div>
+
+            <div class="rounded-2xl bg-black/5 border border-black/10 p-4">
+              <div class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles text-yellow-500"></i>
+                Prompt 提供
+              </div>
+              <p class="mt-2 text-sm text-gray-600">
+                課堂用 Prompt 可直接帶走
+              </p>
+            </div>
+
+            <div class="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-4">
+              <div class="text-sm font-extrabold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-rotate-left text-emerald-600"></i>
+                7 天退費
+              </div>
+              <p class="mt-2 text-sm text-gray-700">
+                不適合可全額退費
+              </p>
+            </div>
+
+          </div>
+
+          <div class="mt-6 pt-6 border-t border-black/10 flex items-center justify-between gap-4">
+            <div class="text-sm text-gray-600">
+              <span class="font-semibold text-gray-900">重點：</span>
+              先開始，再決定
+            </div>
+            <span class="text-xs px-3 py-1 rounded-full border border-black/10 bg-black/5 text-gray-500">
+              <i class="fa-solid fa-circle-play text-sky-500 mr-1"></i> 隨時可重看
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+
+<section id="instructor" class="py-24 border-t border-black/5 bg-white relative overflow-hidden">
+  <!-- soft glow -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute left-1/2 top-12 -translate-x-1/2 w-[720px] h-[720px] rounded-full bg-brand-primary/10 blur-3xl"></div>
+    <div class="absolute left-1/2 bottom-0 -translate-x-1/2 w-[620px] h-[620px] rounded-full bg-brand-accent/10 blur-3xl"></div>
+  </div>
+
+  <div class="max-w-6xl mx-auto px-6 relative z-10">
+    <!-- Top: photo + copy -->
+    <div class="grid md:grid-cols-2 gap-10 lg:gap-12 items-center">
+
+      <!-- Photo -->
+      <div class="flex justify-center md:justify-start">
+        <div class="relative">
+          <div class="absolute -inset-6 rounded-full bg-brand-primary/10 blur-2xl"></div>
+
+          <div class="relative rounded-3xl border border-black/10 bg-white/70 backdrop-blur-xl shadow-sm p-3">
+            <img
+              src="./img/avatar.png"
+              alt="講師照片"
+              class="w-72 sm:w-80 aspect-[4/5] object-cover rounded-2xl"
+            />
+          </div>
+
+          <!-- small badge -->
+          <div class="absolute -bottom-4 left-1/2 -translate-x-1/2">
+            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-black/10 bg-white/90 shadow-sm text-sm text-gray-700">
+              <span class="inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+              講師｜Doris
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div>
+        <span class="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full text-sm border border-black/10 bg-black/5 text-brand-primary font-semibold">
+          關於講師
+        </span>
+
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
+          我也是從「自己摸索」一路走過來的
+        </h2>
+
+        <div class="mt-5 space-y-4 text-gray-600 leading-relaxed">
+          <p>
+          Hi 我是 Doris, 
+          學習開發的路上我不是一路都很順的人。  
+          很多你現在卡住的地方，我其實都卡過。
+          </p>
+
+          <p>
+            我經營一個 YouTube 頻道，分享開發、AI 與產品實作的經驗；  
+            也曾獨自完成一個線上開店平台『海浪商店 HiinPay』，從前台、後台、會員、金流到部署，
+            所有功能都是自己一個人完成。
+          </p>
+
+          <p>
+            過去我也開過兩門線上課程，  
+            慢慢發現：大家真正需要的，
+            不是更多語法，而是「怎麼把東西完成」。
+          </p>
+
+          <p>
+            這堂課，其實就是我把自己一路走來的做法，
+            整理成一套可以重複使用的流程，
+            陪你少走一點冤枉路。
+          </p>
+        </div>
+
+        
+      </div>
+    </div>
+
+
+    <!-- <div class="mt-14">
+      <div class="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <h3 class="text-xl sm:text-2xl font-extrabold text-gray-900">你可以先看我的作品與內容</h3>
+          <p class="mt-1 text-sm text-gray-600">下面是「版型示意」，你之後直接換圖就好。</p>
+        </div>
+        <span class="text-xs px-3 py-1 rounded-full border border-black/10 bg-black/5 text-gray-600">
+          圖片比例已固定｜換圖不跑版
+        </span>
+      </div>
+
+      <div class="mt-6 grid lg:grid-cols-12 gap-6">
+
+        <div class="lg:col-span-5 rounded-3xl border border-black/10 bg-white/80 backdrop-blur-xl shadow-sm overflow-hidden">
+          <div class="p-5 sm:p-6 flex items-center justify-between">
+            <div class="font-extrabold text-gray-900 flex items-center gap-2">
+              <i class="fa-brands fa-youtube text-red-500"></i>
+              YouTube 
+            </div>
+            <span class="text-xs text-gray-500">（放封面 / 代表影片拼圖）</span>
+          </div>
+
+          <div class="px-5 sm:px-6 pb-6">
+            <div class="grid grid-cols-2 gap-3">
+
+              <a href="#" class="group rounded-2xl border border-black/10 bg-white overflow-hidden shadow-sm">
+                <img src="./img/placeholder-yt-1.jpg" alt="YouTube 圖片 1" class="w-full aspect-video object-cover group-hover:scale-[1.02] transition-transform" />
+              </a>
+              <a href="#" class="group rounded-2xl border border-black/10 bg-white overflow-hidden shadow-sm">
+                <img src="./img/placeholder-yt-2.jpg" alt="YouTube 圖片 2" class="w-full aspect-video object-cover group-hover:scale-[1.02] transition-transform" />
+              </a>
+            </div>
+
+            <div class="mt-4 text-sm text-gray-600 leading-relaxed">
+              我會把「真的做出來」的過程分享給你看：從想法、切流程、到上線驗證。
+            </div>
+
+            <a href="#" class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-primary hover:opacity-80">
+              看更多影片 <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+
+        <div class="lg:col-span-4 rounded-3xl border border-black/10 bg-white/80 backdrop-blur-xl shadow-sm overflow-hidden">
+          <div class="p-5 sm:p-6 flex items-center justify-between">
+            <div class="font-extrabold text-gray-900 flex items-center gap-2">
+              <i class="fa-solid fa-graduation-cap text-brand-primary"></i>
+              Courses
+            </div>
+            <span class="text-xs text-gray-500">（放課程封面）</span>
+          </div>
+
+          <div class="px-5 sm:px-6 pb-6 space-y-3">
+
+            <a href="#" class="group block rounded-2xl border border-black/10 bg-white overflow-hidden shadow-sm">
+              <img src="./img/placeholder-course-1.jpg" alt="課程展示 1" class="w-full aspect-[16/9] object-cover group-hover:scale-[1.02] transition-transform" />
+            </a>
+            <a href="#" class="group block rounded-2xl border border-black/10 bg-white overflow-hidden shadow-sm">
+              <img src="./img/placeholder-course-2.jpg" alt="課程展示 2" class="w-full aspect-[16/9] object-cover group-hover:scale-[1.02] transition-transform" />
+            </a>
+
+            <div class="text-sm text-gray-600">
+              這次新課是把「流程與決策」再做得更完整，讓你能一路走到可營運。
+            </div>
+          </div>
+        </div>
+
+
+        <div class="lg:col-span-3 rounded-3xl border border-black/10 bg-white/80 backdrop-blur-xl shadow-sm overflow-hidden">
+          <div class="p-5 sm:p-6 flex items-center justify-between">
+            <div class="font-extrabold text-gray-900 flex items-center gap-2">
+              <i class="fa-solid fa-layer-group text-emerald-600"></i>
+              Work
+            </div>
+            <span class="text-xs text-gray-500">（放 2~4 張）</span>
+          </div>
+
+          <div class="px-5 sm:px-6 pb-6">
+            <div class="grid grid-cols-2 gap-3">
+
+              <a href="#" class="group rounded-2xl border border-black/10 bg-white overflow-hidden shadow-sm">
+                <img src="./img/placeholder-work-1.jpg" alt="作品圖 1" class="w-full aspect-square object-cover group-hover:scale-[1.02] transition-transform" />
+              </a>
+              <a href="#" class="group rounded-2xl border border-black/10 bg-white overflow-hidden shadow-sm">
+                <img src="./img/placeholder-work-2.jpg" alt="作品圖 2" class="w-full aspect-square object-cover group-hover:scale-[1.02] transition-transform" />
+              </a>
+              <a href="#" class="group rounded-2xl border border-black/10 bg-white overflow-hidden shadow-sm">
+                <img src="./img/placeholder-work-3.jpg" alt="作品圖 3" class="w-full aspect-square object-cover group-hover:scale-[1.02] transition-transform" />
+              </a>
+              <a href="#" class="group rounded-2xl border border-black/10 bg-white overflow-hidden shadow-sm">
+                <img src="./img/placeholder-work-4.jpg" alt="作品圖 4" class="w-full aspect-square object-cover group-hover:scale-[1.02] transition-transform" />
+              </a>
+            </div>
+
+            <div class="mt-4 text-sm text-gray-600">
+              用作品讓你更快理解：我教的是「怎麼完成」，不是只講概念。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> -->
+  </div>
+</section>
+
+
+
+
+
+<!-- FAQ -->
+<section id="faq" class="py-20 border-t border-black/5 bg-white relative">
+  <!-- soft background -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute left-1/2 top-24 -translate-x-1/2 w-[680px] h-[680px] rounded-full bg-brand-primary/10 blur-3xl"></div>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <!-- Title -->
+    <div class="text-center mb-12">
+      <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-black/10 bg-black/5 text-sm text-brand-primary font-semibold">
+        FAQ
+      </span>
+      <h2 class="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900">
+        常見問題
+      </h2>
+      <p class="mt-3 text-gray-600">
+        你可能會想問的問題，我們先幫你整理好。
+      </p>
+    </div>
+
+    <div class="space-y-4">
+      <!-- Item -->
+      <details class="rounded-2xl border border-black/10 bg-white/80 backdrop-blur-xl p-6 group shadow-sm">
+        <summary class="cursor-pointer list-none flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-sm font-extrabold text-brand-primary">
+              Q1
+            </span>
+            <h3 class="font-bold text-gray-900">
+              這堂課適合完全沒有寫過程式的人嗎？
+            </h3>
+          </div>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          不適合完全零基礎。<br>
+          你不需要是工程師，但至少要看得懂基本邏輯或流程。<br>
+          如果你曾用 AI、Vibe Coding 做過網站或功能，會很適合。
+        </p>
+      </details>
+
+      <details class="rounded-2xl border border-black/10 bg-white/80 backdrop-blur-xl p-6 group shadow-sm">
+        <summary class="cursor-pointer list-none flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-sm font-extrabold text-brand-primary">
+              Q2
+            </span>
+            <h3 class="font-bold text-gray-900">
+              我只會前端／我是設計師，也適合嗎？
+            </h3>
+          </div>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          適合。<br>
+          課程重點不是變成後端工程師，<br>
+          而是補齊「把設計完成到能運作」的系統能力。
+        </p>
+      </details>
+
+      <details class="rounded-2xl border border-black/10 bg-white/80 backdrop-blur-xl p-6 group shadow-sm">
+        <summary class="cursor-pointer list-none flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-sm font-extrabold text-brand-primary">
+              Q3
+            </span>
+            <h3 class="font-bold text-gray-900">
+              這堂課會教很多程式語言或技術細節嗎？
+            </h3>
+          </div>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          不會。<br>
+          重點在系統架構、流程設計與 AI 協作，<br>
+          而不是鑽研單一語言或框架。
+        </p>
+      </details>
+
+      <details class="rounded-2xl border border-black/10 bg-white/80 backdrop-blur-xl p-6 group shadow-sm">
+        <summary class="cursor-pointer list-none flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-sm font-extrabold text-brand-primary">
+              Q4
+            </span>
+            <h3 class="font-bold text-gray-900">
+              我真的可以做出一個能收錢的系統嗎？
+            </h3>
+          </div>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          可以。<br>
+          課程會帶你完成前台、會員、金流與後台，<br>
+          是真正能上線使用的系統。
+        </p>
+      </details>
+
+      <details class="rounded-2xl border border-black/10 bg-white/80 backdrop-blur-xl p-6 group shadow-sm">
+        <summary class="cursor-pointer list-none flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-sm font-extrabold text-brand-primary">
+              Q5
+            </span>
+            <h3 class="font-bold text-gray-900">
+              課程中遇到問題，可以找誰？
+            </h3>
+          </div>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          所有課程相關問題，<br>
+          都可以透過 IG 或 Email 提問，<br>
+          我們會提供清楚的方向與回覆。
+        </p>
+      </details>
+
+      <details class="rounded-2xl border border-black/10 bg-white/80 backdrop-blur-xl p-6 group shadow-sm">
+        <summary class="cursor-pointer list-none flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-sm font-extrabold text-brand-primary">
+              Q6
+            </span>
+            <h3 class="font-bold text-gray-900">
+              課程有觀看期限嗎？
+            </h3>
+          </div>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          沒有觀看期限。<br>
+          你可以依照自己的節奏反覆觀看與實作。
+        </p>
+      </details>
+
+      <details class="rounded-2xl border border-black/10 bg-white/80 backdrop-blur-xl p-6 group shadow-sm">
+        <summary class="cursor-pointer list-none flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-sm font-extrabold text-brand-primary">
+              Q7
+            </span>
+            <h3 class="font-bold text-gray-900">
+              課堂使用的 Prompt 會提供嗎？
+            </h3>
+          </div>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          會。<br>
+          所有課堂使用的 Prompt 與重點資訊，<br>
+          都會整理提供給學員。
+        </p>
+      </details>
+
+      <details class="rounded-2xl border border-black/10 bg-white/80 backdrop-blur-xl p-6 group shadow-sm">
+        <summary class="cursor-pointer list-none flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-sm font-extrabold text-brand-primary">
+              Q8
+            </span>
+            <h3 class="font-bold text-gray-900">
+              完成後可以延伸做其他產品嗎？
+            </h3>
+          </div>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          可以。<br>
+          你學到的是一套能反覆使用的「完成產品流程」。
+        </p>
+      </details>
+
+      <details class="rounded-2xl border border-black/10 bg-white/80 backdrop-blur-xl p-6 group shadow-sm">
+        <summary class="cursor-pointer list-none flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-sm font-extrabold text-brand-primary">
+              Q9
+            </span>
+            <h3 class="font-bold text-gray-900">
+              課程會不會很花時間？
+            </h3>
+          </div>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          全長約 10 小時，<br>
+          每一章都能獨立分段完成。
+        </p>
+      </details>
+
+      <details class="rounded-2xl border border-black/10 bg-white/80 backdrop-blur-xl p-6 group shadow-sm">
+        <summary class="cursor-pointer list-none flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-sm font-extrabold text-brand-primary">
+              Q10
+            </span>
+            <h3 class="font-bold text-gray-900">
+              如果上了之後發現不適合怎麼辦？
+            </h3>
+          </div>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          7 天內可申請全額退款，<br>
+          不問理由。
+        </p>
+      </details>
+
+      <details class="rounded-2xl border border-black/10 bg-white/80 backdrop-blur-xl p-6 group shadow-sm">
+        <summary class="cursor-pointer list-none flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-sm font-extrabold text-brand-primary">
+              Q11
+            </span>
+            <h3 class="font-bold text-gray-900">
+              這堂課和一般寫程式課有什麼不同？
+            </h3>
+          </div>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          一般課教「怎麼寫」，<br>
+          這堂課教「怎麼完成一個系統」。
+        </p>
+      </details>
+    </div>
+  </div>
+</section>
+
+
+
+
+<!-- CTA（淺色系） -->
+<section
+  class="relative py-28 overflow-hidden border-t border-black/5 bg-white"
+  style="
+    background-image: url('./img/bg-cta3.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  "
+>
+  <!-- Light overlay：柔化背景，不壓黑 -->
+  <div class="absolute inset-0 bg-white/30 backdrop-blur-[2px]"></div>
+
+  <!-- Soft brand glow -->
+  <div
+    class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+           w-[640px] h-[640px] bg-brand-primary/15 rounded-full blur-3xl
+           opacity-70 pointer-events-none"
+  ></div>
+
+  <!-- Content -->
+  <div class="relative z-10 max-w-3xl mx-auto px-4 text-center">
+    <span
+      class="inline-flex items-center gap-2 px-4 py-2 rounded-full
+             border border-black/10 bg-black/5 text-sm
+             text-brand-primary font-semibold mb-6"
+    >
+      Ready to build
+    </span>
+
+    <h2 class="text-4xl sm:text-5xl font-extrabold mb-6 leading-tight text-gray-900">
+      準備好，把 Vibe Coding<br />
+      變成你的收費系統了嗎？
+    </h2>
+
+    <p class="text-lg sm:text-xl text-gray-600 mb-12 leading-relaxed">
+      不再只做 Demo。<br />
+      這一次，把想法完成成能營運的產品。
+    </p>
+
+    <div
+      class="rounded-3xl border border-black/10 bg-white/85 backdrop-blur-xl
+             max-w-lg mx-auto p-8
+             shadow-sm hover:shadow-md
+             transition-shadow"
+    >
+      <button
+        class="w-full glow-button
+               bg-brand-primary text-white
+               font-extrabold text-xl
+               py-4 rounded-xl
+               hover:bg-brand-primary/90
+               transition-colors"
+      >
+        立即預購
+        <i class="fa-solid fa-arrow-right ml-2"></i>
+      </button>
+
+      <div class="mt-5 text-xs text-gray-500 flex justify-center gap-3 flex-wrap">
+        <span>早鳥優惠進行中</span>
+        <span>｜</span>
+        <span>7 天內不適合可全額退費</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+  <footer class="bg-black py-12 border-t border-gray-800 text-center">
+    <div class="max-w-7xl mx-auto px-4 text-gray-500 text-sm">
+      <div class="mb-4">
+        <img src="./img/logo.png" alt="Doris AI 學院" class="w-7 h-7 mx-auto">
+        <p class="font-bold text-white text-lg">Vibe Coding 系統實戰</p>
+      </div>
+      <p>&copy; 2026 Doris AI 學院. All rights reserved.</p>
+      <div class="mt-4 flex justify-center gap-6">
+        <a href="#" class="hover:text-brand-dark">聯絡我們</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const targets = document.querySelectorAll(".reveal");
+    if (!("IntersectionObserver" in window)) {
+      // fallback：不支援就直接顯示
+      targets.forEach(el => el.classList.add("is-in"));
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-in");
+        observer.unobserve(entry.target); // ✅ 進場就解除觀察，避免越滑越卡
+      });
+    }, { threshold: 0.12, rootMargin: "80px 0px" });
+
+    targets.forEach((el) => observer.observe(el));
+  });
+</script>
+<script>
+  // ✅ Global reveal helper: add data-reveal + optional data-delay="1|2|3"
+  document.addEventListener("DOMContentLoaded", () => {
+    const items = Array.from(document.querySelectorAll("[data-reveal]"));
+    if (!items.length) return;
+
+    items.forEach(el => {
+      el.classList.add("reveal-slow");
+      const d = el.getAttribute("data-delay");
+      if (d === "1") el.classList.add("reveal-delay-1");
+      if (d === "2") el.classList.add("reveal-delay-2");
+      if (d === "3") el.classList.add("reveal-delay-3");
+    });
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-in");
+        io.unobserve(entry.target);
+      });
+    }, { threshold: 0.15 });
+
+    items.forEach(el => io.observe(el));
+  });
+</script>
+
+</body>
+</html>

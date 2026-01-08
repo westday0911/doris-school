@@ -36,6 +36,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
     image_url: "",
     news: "",
     intro_video_url: "",
+    launch_date: "",
     custom_code: { html: "", css: "", js: "" },
     pricing_options: [] as any[]
   });
@@ -43,6 +44,26 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
   const [modules, setModules] = useState<any[]>([]);
   const [categoryInput, setCategoryInput] = useState("");
   const [existingCategories, setExistingCategories] = useState<string[]>([]);
+
+  // 自動計算課程總時長
+  useEffect(() => {
+    let totalMinutes = 0;
+    modules.forEach(module => {
+      module.lessons?.forEach((lesson: any) => {
+        totalMinutes += (parseInt(lesson.duration) || 0);
+      });
+    });
+
+    if (totalMinutes > 0) {
+      const hours = Math.floor(totalMinutes / 60);
+      const mins = totalMinutes % 60;
+      let durationStr = "";
+      if (hours > 0) durationStr += `${hours} 小時 `;
+      if (mins > 0) durationStr += `${mins} 分鐘`;
+      
+      setFormData(prev => ({ ...prev, duration: durationStr.trim() }));
+    }
+  }, [modules]);
 
   useEffect(() => {
     fetchExistingCategories();
@@ -90,6 +111,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
         image_url: course.image_url || "",
         news: course.news || "",
         intro_video_url: course.intro_video_url || "",
+        launch_date: course.launch_date ? new Date(course.launch_date).toISOString().split('T')[0] : "",
         custom_code: course.custom_code || { html: "", css: "", js: "" },
         pricing_options: Array.isArray(course.pricing_options) ? course.pricing_options : []
       });
@@ -144,6 +166,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
       // 1. 儲存課程主表
       const submitData = {
         ...formData,
+        launch_date: formData.launch_date || null,
         tag: formData.categories.length > 0 ? formData.categories[0] : ""
       };
 
@@ -198,6 +221,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
                 video_url: l.video_url,
                 supplemental_info: l.supplemental_info,
                 attachments: l.attachments || [],
+                is_free: l.is_free || false,
                 order_index: lIdx
               });
             });
@@ -257,7 +281,8 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
       duration: "", 
       video_url: "", 
       supplemental_info: "", 
-      attachments: [] 
+      attachments: [],
+      is_free: false
     });
     setModules(updated);
   };
@@ -366,6 +391,21 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
                   <input className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none" value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} />
                 </div>
               </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700">課程總時長 (自動計算)</label>
+                  <input className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 font-medium outline-none" value={formData.duration} readOnly />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700">難易度</label>
+                  <select className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none bg-white" value={formData.level} onChange={(e) => setFormData({ ...formData, level: e.target.value })}>
+                    <option>入門</option>
+                    <option>中階</option>
+                    <option>進階</option>
+                    <option>實戰</option>
+                  </select>
+                </div>
+              </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700">課程標語 / 短簡介</label>
                 <textarea className="w-full px-4 py-2.5 rounded-lg border border-slate-200 h-20 outline-none text-sm" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
@@ -405,6 +445,16 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
                               value={lesson.duration} 
                               onChange={(e) => updateLesson(mIdx, lIdx, 'duration', parseInt(e.target.value) || 0)} 
                             />
+                          </div>
+                          <div className="flex items-center gap-2 mt-6">
+                            <input 
+                              type="checkbox" 
+                              id={`free-${mIdx}-${lIdx}`}
+                              checked={lesson.is_free} 
+                              onChange={(e) => updateLesson(mIdx, lIdx, 'is_free', e.target.checked)}
+                              className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <label htmlFor={`free-${mIdx}-${lIdx}`} className="text-xs font-bold text-slate-600 cursor-pointer">免費試聽</label>
                           </div>
                           <Button size="icon" variant="ghost" className="mt-6 text-slate-300 hover:text-red-500" onClick={() => removeLesson(mIdx, lIdx)}><Trash2 size={14} /></Button>
                         </div>
@@ -541,6 +591,18 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
                 <option>已下架</option>
               </select>
             </div>
+
+            {formData.status === "預購中" && (
+              <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                <label className="text-sm font-bold text-slate-700 block">預計開課日期</label>
+                <input 
+                  type="date" 
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white outline-none" 
+                  value={formData.launch_date} 
+                  onChange={(e) => setFormData({ ...formData, launch_date: e.target.value })} 
+                />
+              </div>
+            )}
 
             <div className="space-y-3">
               <label className="text-sm font-bold text-slate-700 block flex items-center gap-2"><Megaphone size={14} className="text-orange-500" /> 最新消息</label>

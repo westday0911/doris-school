@@ -79,13 +79,19 @@ export default function CourseListClient({ initialCourses }: { initialCourses: a
                     <CardContent className="px-5 pb-6 mt-auto">
                       <div className="flex items-center justify-between pt-6 border-t border-slate-100">
                         <div className="flex flex-col">
-                          {displayOriginalPrice > displayPrice && (
-                            <span className="text-[10px] text-slate-400 line-through leading-none mb-1">NT$ {displayOriginalPrice?.toLocaleString()}</span>
+                          {displayPrice === 0 ? (
+                            <span className="text-2xl font-black text-emerald-600 leading-none">免費課程</span>
+                          ) : (
+                            <>
+                              {displayOriginalPrice > displayPrice && (
+                                <span className="text-[10px] text-slate-400 line-through leading-none mb-1">NT$ {displayOriginalPrice?.toLocaleString()}</span>
+                              )}
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-2xl font-black text-slate-950 leading-none">NT$ {displayPrice?.toLocaleString()}</span>
+                                <span className="text-[10px] font-bold text-slate-400">起</span>
+                              </div>
+                            </>
                           )}
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-black text-slate-950 leading-none">NT$ {displayPrice?.toLocaleString()}</span>
-                            <span className="text-[10px] font-bold text-slate-400">起</span>
-                          </div>
                         </div>
                         <Button size="sm" variant="default" className="rounded-lg h-9 text-xs font-bold bg-slate-900 hover:bg-blue-600 transition-colors">
                           立即查看

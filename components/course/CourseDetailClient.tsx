@@ -31,7 +31,7 @@ export default function CourseDetailClient({
   slug: string, 
   initialModules: any[]
 }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { addToCart } = useCart();
   const router = useRouter();
   const [course, setCourse] = useState<any>(initialCourse);
@@ -40,18 +40,57 @@ export default function CourseDetailClient({
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [hasPurchased, setHasPurchased] = useState(false);
   const [checkingPurchase, setCheckingPurchase] = useState(true);
+  const [userReview, setUserReview] = useState<any>(null);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewContent, setReviewContent] = useState("");
+  const [reviewRating, setReviewRating] = useState(5);
   const [openModules, setOpenModules] = useState<string[]>(initialModules.length > 0 ? [initialModules[0].id] : []);
   const [selectedPricingIdx, setSelectedPricingIdx] = useState(0);
   const [showStickyNav, setShowStickyNav] = useState(false);
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+  const [isEnrolling, setIsEnrolling] = useState(false);
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (hasPurchased) {
       alert("您已擁有此課程");
       return;
     }
 
     const currentPricing = pricingOptions[selectedPricingIdx];
+    const price = currentPricing?.price !== undefined ? currentPricing.price : (course.discount_price || 0);
+    
+    // 如果是免費課程
+    if (price === 0) {
+      if (!user) {
+        alert("請先登入後再報名免費課程");
+        router.push(`/auth/login?returnUrl=/courses/${slug}`);
+        return;
+      }
+
+      setIsEnrolling(true);
+      try {
+        const { error } = await supabase
+          .from('user_courses')
+          .insert({
+            user_id: user.id,
+            course_id: course.id,
+            progress: 0,
+            status: 'active'
+          });
+
+        if (error) throw error;
+
+        alert("報名成功！");
+        setHasPurchased(true);
+        router.push(`/courses/${slug}/learn`);
+      } catch (err: any) {
+        alert("報名失敗：" + err.message);
+      } finally {
+        setIsEnrolling(false);
+      }
+      return;
+    }
+
     const item = {
       id: `${course.id}-${selectedPricingIdx}`,
       title: course.title,
@@ -117,8 +156,55 @@ export default function CourseDetailClient({
       .eq('course_id', courseId)
       .single();
 
-    setHasPurchased(!!data);
+    if (data) {
+      setHasPurchased(true);
+      // 如果已購買，檢查是否已留下評論
+      const { data: reviewData } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('target_id', courseId)
+        .single();
+      
+      if (reviewData) {
+        setUserReview(reviewData);
+      }
+    } else {
+      setHasPurchased(false);
+    }
     setCheckingPurchase(false);
+  };
+
+  const handleSubmitReview = async () => {
+    if (!user) return;
+    if (!reviewContent.trim()) {
+      alert("請輸入評論內容");
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    const { error } = await supabase
+      .from('reviews')
+      .insert({
+        user_id: user.id,
+        user_name: profile?.name || user.email?.split('@')[0],
+        target_id: course.id,
+        target_type: 'course',
+        target_title: course.title,
+        content: reviewContent,
+        rating: reviewRating,
+        status: '待審核'
+      });
+
+    if (error) {
+      alert("提交失敗：" + error.message);
+    } else {
+      alert("評論已提交，請等待管理員審核");
+      setReviewContent("");
+      // 重新檢查狀態
+      checkPurchaseStatus(course.id);
+    }
+    setIsSubmittingReview(false);
   };
 
   const fetchReviews = async (courseId: string) => {
@@ -289,9 +375,9 @@ export default function CourseDetailClient({
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-baseline gap-2 mr-4">
               <span className="text-lg font-black text-slate-950">
-                NT$ {(pricingOptions[selectedPricingIdx]?.price || course.discount_price || 0).toLocaleString()}
+                {(pricingOptions[selectedPricingIdx]?.price || course.discount_price || 0) === 0 ? "免費" : `NT$ ${(pricingOptions[selectedPricingIdx]?.price || course.discount_price || 0).toLocaleString()}`}
               </span>
-              {(pricingOptions[selectedPricingIdx]?.original_price || course.original_price) > (pricingOptions[selectedPricingIdx]?.price || course.discount_price) && (
+              {(pricingOptions[selectedPricingIdx]?.original_price || course.original_price) > (pricingOptions[selectedPricingIdx]?.price || course.discount_price) && (pricingOptions[selectedPricingIdx]?.price || course.discount_price) > 0 && (
                 <span className="text-xs text-slate-400 line-through font-bold">
                   NT$ {(pricingOptions[selectedPricingIdx]?.original_price || course.original_price)?.toLocaleString()}
                 </span>
@@ -310,8 +396,11 @@ export default function CourseDetailClient({
                 size="sm" 
                 className="bg-blue-600 hover:bg-blue-700 text-white font-black px-6 rounded-full"
                 onClick={handleBuyNow}
+                disabled={isEnrolling}
               >
-                立即購買
+                {isEnrolling ? <Loader2 className="animate-spin" size={16} /> : (
+                  (pricingOptions[selectedPricingIdx]?.price === 0 || (!pricingOptions.length && course.discount_price === 0)) ? "立即報名" : "立即購買"
+                )}
               </Button>
             )}
           </div>
@@ -380,6 +469,16 @@ export default function CourseDetailClient({
                     <span className="text-white font-bold text-sm">{course.student_count || 0} 人已加入</span>
                   </div>
                 </div>
+
+                {course.status === "預購中" && course.launch_date && (
+                  <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                    <div className="p-2 rounded-lg bg-orange-500/20 text-orange-400"><Clock size={18} /></div>
+                    <div>
+                      <span className="block text-[10px] text-orange-400 font-bold uppercase tracking-widest leading-none mb-1">預計開課日期</span>
+                      <span className="text-white font-bold text-sm">{new Date(course.launch_date).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -526,21 +625,21 @@ export default function CourseDetailClient({
                       {openModules.includes(module.id) && (
                         <div className="px-6 pb-6 space-y-3 animate-in slide-in-from-top-2 duration-300">
                           {module.lessons?.map((lesson: any, lIdx: number) => (
-                            <div key={lesson.id} className={`flex flex-col gap-2 p-5 rounded-2xl border transition-all ${hasPurchased ? 'bg-blue-50/30 border-blue-100' : 'bg-slate-50/50 border-slate-100'}`}>
+                            <div key={lesson.id} className={`flex flex-col gap-2 p-5 rounded-2xl border transition-all ${lesson.is_free ? 'bg-emerald-50/30 border-emerald-100' : 'bg-slate-50/50 border-slate-100'}`}>
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                  <div className={`p-2.5 rounded-full shadow-sm ${hasPurchased ? 'bg-blue-600 text-white cursor-pointer hover:scale-110 transition-transform' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>
-                                    {hasPurchased ? <PlayCircle size={20} /> : <Lock size={18} />}
+                                  <div className={`p-2.5 rounded-full shadow-sm ${lesson.is_free ? 'bg-emerald-600 text-white cursor-pointer hover:scale-110 transition-transform' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>
+                                    {lesson.is_free ? <PlayCircle size={20} /> : <Lock size={18} />}
                                   </div>
                                   <div>
-                                    <p className={`text-base font-black ${hasPurchased ? 'text-blue-950' : 'text-slate-800'}`}>
-                                      {lesson.title}
-                                    </p>
+                                    <div className="flex items-center gap-2">
+                                      <p className={`text-base font-black ${lesson.is_free ? 'text-emerald-950' : 'text-slate-800'}`}>
+                                        {lesson.title}
+                                      </p>
+                                      {lesson.is_free && <Badge className="bg-emerald-500 text-white border-0 text-[10px] h-4">免費試聽</Badge>}
+                                    </div>
                                     <div className="flex items-center gap-3 mt-1.5">
-                                      {lesson.video_url && <Badge variant="muted" className="text-[10px] font-black h-4 px-1.5 bg-slate-100 border-slate-200">{hasPurchased ? 'VIDEO' : 'PRIVATE'}</Badge>}
-                                      {hasPurchased && (lesson.supplemental_info || (lesson.attachments && lesson.attachments.length > 0)) && (
-                                        <Badge variant="muted" className="text-blue-600 border-blue-200 bg-blue-50 text-[10px] gap-1 px-2 py-1"><FileText size={12} /> 附資源</Badge>
-                                      )}
+                                      {lesson.video_url && lesson.is_free && <Badge variant="muted" className="text-[10px] font-black h-4 px-1.5 bg-slate-100 border-slate-200">VIDEO</Badge>}
                                     </div>
                                   </div>
                                 </div>
@@ -549,17 +648,19 @@ export default function CourseDetailClient({
                                   <span className="text-sm font-bold text-slate-400 font-mono bg-slate-100/50 px-2 py-1 rounded-md">
                                     {formatLessonDuration(lesson.duration)}
                                   </span>
-                                  <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-sm ${hasPurchased ? 'bg-blue-600 text-white hover:scale-110 hover:shadow-blue-200' : 'bg-slate-200 text-slate-400'}`}>
-                                    <PlayCircle size={18} fill={hasPurchased ? "white" : "none"} />
-                                  </div>
+                                  {lesson.is_free && (
+                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-sm bg-emerald-600 text-white hover:scale-110 hover:shadow-emerald-200`}>
+                                      <PlayCircle size={18} fill="white" />
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                              {hasPurchased && (
+                              {lesson.is_free && (
                                 <div className="pl-12 space-y-4 mt-6">
                                   {lesson.video_url && renderVideo(lesson.video_url)}
                                   {lesson.supplemental_info && (
-                                    <div className="p-5 rounded-2xl bg-white border border-blue-100 text-sm text-slate-600 leading-relaxed shadow-sm">
-                                      <div className="flex items-center gap-2 mb-3 font-black text-blue-900"><Info size={16} /> 補充資訊與下載</div>
+                                    <div className="p-5 rounded-2xl bg-white border border-emerald-100 text-sm text-slate-600 leading-relaxed shadow-sm">
+                                      <div className="flex items-center gap-2 mb-3 font-black text-emerald-900"><Info size={16} /> 補充資訊與下載</div>
                                       <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: lesson.supplemental_info }} />
                                     </div>
                                   )}
@@ -577,10 +678,79 @@ export default function CourseDetailClient({
 
             {/* 評價區塊 */}
             <div id="reviews" className="space-y-8 scroll-mt-24">
-              <div className="flex items-center gap-3">
-                <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight">學員真心心得</h3>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
+                  <h3 className="text-3xl font-black text-slate-900 tracking-tight">學員真心心得</h3>
+                </div>
               </div>
+
+              {/* 發表評論表單 */}
+              {hasPurchased && !userReview && (
+                <Card className="border-2 border-blue-50 bg-blue-50/30 rounded-3xl overflow-hidden">
+                  <CardContent className="p-8 space-y-6">
+                    <div className="space-y-2">
+                      <h4 className="text-xl font-black text-slate-900">留下您的學習心得</h4>
+                      <p className="text-sm text-slate-500 font-medium">您的評價將幫助更多同學了解這堂課程 (需經管理員審核後顯示)</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-bold text-slate-700">給予評分</span>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setReviewRating(star)}
+                              className={`text-2xl transition-transform hover:scale-110 ${star <= reviewRating ? 'text-yellow-400' : 'text-slate-200'}`}
+                            >
+                              ★
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <textarea
+                          placeholder="分享您的學習心得、課程中最喜歡的部分或建議..."
+                          className="w-full min-h-[120px] p-5 rounded-2xl border-2 border-white bg-white/80 focus:border-blue-500 focus:ring-0 transition-all font-medium text-slate-700"
+                          value={reviewContent}
+                          onChange={(e) => setReviewContent(e.target.value)}
+                        />
+                      </div>
+
+                      <Button 
+                        className="w-full sm:w-auto px-10 h-12 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl shadow-lg shadow-blue-900/10"
+                        onClick={handleSubmitReview}
+                        disabled={isSubmittingReview}
+                      >
+                        {isSubmittingReview ? (
+                          <>提交中 <Loader2 className="ml-2 animate-spin" size={18} /></>
+                        ) : (
+                          "提交評論"
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* 已提交評論提示 */}
+              {userReview && (
+                <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center text-white">
+                    <CheckCircle2 size={24} />
+                  </div>
+                  <div>
+                    <p className="font-black text-emerald-900">您已提交過評論</p>
+                    <p className="text-sm text-emerald-700 font-medium">
+                      狀態：<Badge variant="outline" className="bg-white border-emerald-200 text-emerald-600">{userReview.status}</Badge>
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {loadingReviews ? (
                 <div className="flex items-center justify-center py-10 text-slate-400"><Loader2 className="animate-spin" size={32} /></div>
               ) : reviews.length === 0 ? (
@@ -638,8 +808,10 @@ export default function CourseDetailClient({
                           {opt.label}
                         </h4>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-3xl font-black text-slate-950">NT$ {opt.price?.toLocaleString()}</span>
-                          {opt.original_price > opt.price && (
+                          <span className="text-3xl font-black text-slate-950">
+                            {opt.price === 0 ? "免費" : `NT$ ${opt.price?.toLocaleString()}`}
+                          </span>
+                          {opt.original_price > opt.price && opt.price > 0 && (
                             <span className="text-sm text-slate-400 line-through font-bold">NT$ {opt.original_price?.toLocaleString()}</span>
                           )}
                         </div>
@@ -688,8 +860,11 @@ export default function CourseDetailClient({
                             : 'bg-slate-950 hover:bg-blue-600 text-white'
                         }`}
                         onClick={handleBuyNow}
+                        disabled={isEnrolling}
                       >
-                        {hasPurchased ? "您已擁有此課程" : "立即購買"}
+                        {isEnrolling ? <Loader2 className="animate-spin" size={18} /> : (
+                          hasPurchased ? "您已擁有此課程" : (opt.price === 0 ? "立即報名" : "立即購買")
+                        )}
                       </Button>
                     </CardContent>
                   </Card>
@@ -699,18 +874,24 @@ export default function CourseDetailClient({
                       <div className="space-y-2 text-center">
                         <h4 className="text-xl font-black text-blue-600">標準入學方案</h4>
                         <div className="flex items-baseline justify-center gap-2">
-                          <span className="text-4xl font-black text-slate-950">NT$ {course.discount_price?.toLocaleString()}</span>
-                          <span className="text-base text-slate-400 line-through font-bold">NT$ {course.original_price?.toLocaleString()}</span>
+                          <span className="text-4xl font-black text-slate-950">
+                            {course.discount_price === 0 ? "免費" : `NT$ ${course.discount_price?.toLocaleString()}`}
+                          </span>
+                          {course.original_price > course.discount_price && course.discount_price > 0 && (
+                            <span className="text-base text-slate-400 line-through font-bold">NT$ {course.original_price?.toLocaleString()}</span>
+                          )}
                         </div>
                       </div>
                       
                       <Button 
                         size="lg" 
                         className="w-full h-16 text-lg font-black bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-xl shadow-blue-900/20 disabled:bg-slate-200"
-                        disabled={course.status === "已額滿" || course.status === "已下架"}
+                        disabled={course.status === "已額滿" || course.status === "已下架" || isEnrolling}
                         onClick={handleBuyNow}
                       >
-                        {course.status === "已額滿" ? "名額已滿" : "立即購買"}
+                        {isEnrolling ? <Loader2 className="animate-spin" size={20} /> : (
+                          course.status === "已額滿" ? "名額已滿" : (course.discount_price === 0 ? "立即報名" : "立即購買")
+                        )}
                       </Button>
                     </CardContent>
                   </Card>
