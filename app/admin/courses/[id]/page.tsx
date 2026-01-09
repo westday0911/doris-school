@@ -37,6 +37,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
     news: "",
     intro_video_url: "",
     launch_date: "",
+    order_index: 0,
     custom_code: { html: "", css: "", js: "" },
     pricing_options: [] as any[]
   });
@@ -112,6 +113,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
         news: course.news || "",
         intro_video_url: course.intro_video_url || "",
         launch_date: course.launch_date ? new Date(course.launch_date).toISOString().split('T')[0] : "",
+        order_index: course.order_index || 0,
         custom_code: course.custom_code || { html: "", css: "", js: "" },
         pricing_options: Array.isArray(course.pricing_options) ? course.pricing_options : []
       });
@@ -406,9 +408,20 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
                   </select>
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700">課程標語 / 短簡介</label>
-                <textarea className="w-full px-4 py-2.5 rounded-lg border border-slate-200 h-20 outline-none text-sm" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700">排序權重 (越小越前面)</label>
+                  <input 
+                    type="number" 
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none" 
+                    value={formData.order_index} 
+                    onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) || 0 })} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700">課程標語 / 短簡介</label>
+                  <textarea className="w-full px-4 py-2.5 rounded-lg border border-slate-200 h-20 outline-none text-sm" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+                </div>
               </div>
             </div>
           </section>

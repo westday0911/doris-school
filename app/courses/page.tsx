@@ -13,6 +13,7 @@ export default async function CoursesPage() {
   const { data: courses } = await supabase
     .from('courses')
     .select('*')
+    .order('order_index', { ascending: true })
     .order('created_at', { ascending: false });
 
   return <CourseListClient initialCourses={courses || []} />;

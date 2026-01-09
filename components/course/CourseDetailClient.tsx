@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +49,9 @@ export default function CourseDetailClient({
   const [showStickyNav, setShowStickyNav] = useState(false);
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  
+  // 記錄是否已經載入過客製化 JS，避免重複執行
+  const hasInjectedJs = useRef<string | null>(null);
 
   const handleBuyNow = async () => {
     if (hasPurchased) {
@@ -127,12 +130,15 @@ export default function CourseDetailClient({
       // 執行客製化 JS
       if (course.custom_code?.js) {
         try {
+          const oldScript = document.getElementById('course-custom-js');
+          if (oldScript) oldScript.remove();
+
           const script = document.createElement('script');
-          script.innerHTML = course.custom_code.js;
           script.id = 'course-custom-js';
+          script.innerHTML = course.custom_code.js;
           document.body.appendChild(script);
         } catch (e) {
-          console.error("Custom JS Error:", e);
+          console.error("Custom JS Injection Error:", e);
         }
       }
     }
@@ -140,7 +146,7 @@ export default function CourseDetailClient({
       const oldScript = document.getElementById('course-custom-js');
       if (oldScript) oldScript.remove();
     };
-  }, [course, user]);
+  }, [course?.id, user?.id]);
 
   const checkPurchaseStatus = async (courseId: string) => {
     if (!user) {
@@ -154,7 +160,7 @@ export default function CourseDetailClient({
       .select('id')
       .eq('user_id', user.id)
       .eq('course_id', courseId)
-      .single();
+      .maybeSingle();
 
     if (data) {
       setHasPurchased(true);
@@ -745,7 +751,7 @@ export default function CourseDetailClient({
                   <div>
                     <p className="font-black text-emerald-900">您已提交過評論</p>
                     <p className="text-sm text-emerald-700 font-medium">
-                      狀態：<Badge variant="outline" className="bg-white border-emerald-200 text-emerald-600">{userReview.status}</Badge>
+                      狀態：<Badge variant="muted" className="bg-white border-emerald-200 text-emerald-600">{userReview.status}</Badge>
                     </p>
                   </div>
                 </div>
