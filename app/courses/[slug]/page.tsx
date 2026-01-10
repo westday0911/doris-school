@@ -47,6 +47,17 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
 
   if (!course) return <CourseDetailClient initialCourse={null} slug={decodedSlug} initialModules={[]} />;
 
+  // 1.5 抓取真實購買人數
+  const { count: realStudentCount } = await supabase
+    .from('user_courses')
+    .select('*', { count: 'exact', head: true })
+    .eq('course_id', course.id);
+  
+  // 如果資料庫中的 student_count 比真實購買人數少，則以真實人數為主
+  if (realStudentCount && realStudentCount > (course.student_count || 0)) {
+    course.student_count = realStudentCount;
+  }
+
   // 2. 抓取單元與課堂 (依 order_index 排序)
   const { data: modulesData } = await supabase
     .from('course_modules')

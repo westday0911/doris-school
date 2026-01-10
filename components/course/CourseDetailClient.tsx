@@ -458,23 +458,27 @@ export default function CourseDetailClient({
                   <div className="p-2 rounded-lg bg-white/5 text-purple-400"><MonitorPlay size={18} /></div>
                   <div>
                     <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mb-1">觀看方式</span>
-                    <span className="text-white font-bold text-sm">全載具線上看</span>
+                    <span className="text-white font-bold text-sm">{course.viewing_method || "全載具線上看"}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-lg bg-white/5 text-yellow-400"><Star size={18} fill="currentColor" /></div>
-                  <div>
-                    <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mb-1">學員評分</span>
-                    <span className="text-white font-bold text-sm">{course.rating || '5.0'} ({reviews.length} 則評論)</span>
+                {(course.rating > 0 && reviews.length > 0) && (
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-white/5 text-yellow-400"><Star size={18} fill="currentColor" /></div>
+                    <div>
+                      <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mb-1">學員評分</span>
+                      <span className="text-white font-bold text-sm">{course.rating || '5.0'} ({reviews.length} 則評論)</span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-lg bg-white/5 text-rose-400"><Users size={18} /></div>
-                  <div>
-                    <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mb-1">加入人數</span>
-                    <span className="text-white font-bold text-sm">{course.student_count || 0} 人已加入</span>
+                )}
+                {(course.student_count > 0) && (
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-white/5 text-rose-400"><Users size={18} /></div>
+                    <div>
+                      <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mb-1">加入人數</span>
+                      <span className="text-white font-bold text-sm">{course.student_count || 0} 人已加入</span>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {course.status === "預購中" && course.launch_date && (
                   <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20">

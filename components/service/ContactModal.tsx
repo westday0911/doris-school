@@ -42,18 +42,17 @@ export function ContactModal({
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("contacts")
-        .insert([
-          {
-            name: formData.name,
-            contact_info: formData.contact_info,
-            requirement: formData.requirement,
-            status: "pending"
-          }
-        ]);
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "提交失敗");
+      }
+
       setSubmitted(true);
       setTimeout(() => {
         setIsOpen(false);

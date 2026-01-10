@@ -26,10 +26,12 @@ const menuItems = [
   { icon: BookOpen, label: "課程管理", href: "/admin/courses" },
   { icon: FileText, label: "文章管理", href: "/admin/articles" },
   { icon: MessageSquare, label: "評論管理", href: "/admin/reviews" },
+  { icon: Bell, label: "訂閱管理", href: "/admin/subscribers" },
   { icon: Users, label: "會員管理", href: "/admin/members" },
   { icon: ShoppingCart, label: "訂單管理", href: "/admin/orders" },
   { icon: Wrench, label: "AI 工具管理", href: "/admin/tools" },
   { icon: PhoneCall, label: "諮詢管理", href: "/admin/contacts" },
+  { icon: Bell, label: "網站設定", href: "/admin/settings" },
 ];
 
 export default function AdminLayout({

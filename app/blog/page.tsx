@@ -12,8 +12,8 @@ import { supabase } from "@/lib/supabase";
 import { Metadata } from "next";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { BlogListClient } from "@/components/blog/BlogListClient";
-import { formatDate } from "@/lib/utils";
+import { NewsletterForm } from "@/components/NewsletterForm";
+import { formatDate, cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "AI 實戰文章 | Doris AI 學院",
@@ -55,6 +55,22 @@ export default async function BlogPage({
   }
 
   const { data: articlesFromDb } = await query;
+
+  // 獲取動態廣告設定
+  const { data: blogAdConfig } = await supabase
+    .from('site_configs')
+    .select('value')
+    .eq('key', 'blog_sidebar_ad')
+    .maybeSingle();
+  
+  const blogAd = blogAdConfig?.value || {
+    badge: "HOT COURSE",
+    title: "Vibe Coding \n系統實戰課",
+    description: "掌握 2025 最強開發範式，將想法瞬間轉化為高品質產品。",
+    button_text: "立即搶位",
+    link: "/courses/vibe-coding",
+    bg_color: "slate-950"
+  };
 
   const { data: allPublishedArticles } = await supabase
     .from('articles')
@@ -110,19 +126,26 @@ export default async function BlogPage({
             </div>
 
             <aside className="space-y-10 sticky top-28">
-              <div className="relative rounded-xl bg-slate-950 p-6 overflow-hidden group border border-slate-800">
+              {/* 廣告區：動態推廣 */}
+              <div className={cn(
+                "relative rounded-xl p-6 overflow-hidden group border border-slate-800",
+                `bg-${blogAd.bg_color || 'slate-950'}`
+              )}>
                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
                 <div className="relative z-10 space-y-4">
-                  <Badge className="bg-blue-600 border-0 text-[10px] rounded-sm font-bold">HOT COURSE</Badge>
-                  <h3 className="text-lg font-bold text-white leading-tight">
-                    Vibe Coding <br />系統實戰課
+                  {blogAd.badge && (
+                    <Badge className="bg-blue-600 border-0 text-[10px] rounded-sm font-bold">{blogAd.badge}</Badge>
+                  )}
+                  <h3 className="text-lg font-bold text-white leading-tight whitespace-pre-line">
+                    {blogAd.title}
                   </h3>
-                  <p className="text-slate-400 text-xs leading-relaxed">
-                    掌握 2025 最強開發範式，將想法瞬間轉化為高品質產品。
-                  </p>
-                  <Link href="/courses/vibe-coding" className="block w-full">
+                  <div 
+                    className="text-slate-400 text-xs leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: blogAd.description }}
+                  />
+                  <Link href={blogAd.link || "#"} className="block w-full">
                     <Button className="w-full bg-white text-slate-950 hover:bg-blue-50 text-xs font-black rounded-md">
-                      立即搶位
+                      {blogAd.button_text}
                     </Button>
                   </Link>
                 </div>
@@ -186,14 +209,11 @@ export default async function BlogPage({
                 <p className="text-[10px] text-slate-400 font-medium mb-4 uppercase tracking-widest text-center">
                   訂閱電子報，獲取最新 AI 觀點
                 </p>
-                <div className="flex flex-col gap-2">
-                  <input 
-                    type="email" 
-                    placeholder="your@email.com" 
-                    className="w-full text-xs px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                  />
-                  <Button size="sm" className="w-full rounded-lg text-[10px] font-bold">訂閱</Button>
-                </div>
+                <NewsletterForm 
+                  buttonClassName="bg-slate-900 hover:bg-blue-600 text-white"
+                  inputClassName="bg-white border-slate-200"
+                  buttonText="訂閱"
+                />
               </div>
             </aside>
           </div>

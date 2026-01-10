@@ -36,6 +36,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
     image_url: "",
     news: "",
     intro_video_url: "",
+    viewing_method: "無限觀看",
     launch_date: "",
     order_index: 0,
     custom_code: { html: "", css: "", js: "" },
@@ -112,6 +113,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
         image_url: course.image_url || "",
         news: course.news || "",
         intro_video_url: course.intro_video_url || "",
+        viewing_method: course.viewing_method || "無限觀看",
         launch_date: course.launch_date ? new Date(course.launch_date).toISOString().split('T')[0] : "",
         order_index: course.order_index || 0,
         custom_code: course.custom_code || { html: "", css: "", js: "" },
@@ -602,6 +604,14 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
                 <option>已上架</option>
                 <option>已額滿</option>
                 <option>已下架</option>
+              </select>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-slate-700 block">觀看方式</label>
+              <select className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white outline-none" value={formData.viewing_method} onChange={(e) => setFormData({ ...formData, viewing_method: e.target.value })}>
+                <option>無限觀看</option>
+                <option>一年內無限次觀看</option>
               </select>
             </div>
 

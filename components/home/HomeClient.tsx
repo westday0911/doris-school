@@ -14,6 +14,7 @@ import { TechBackground } from "@/components/TechBackground";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { NewsletterForm } from "@/components/NewsletterForm";
 import { useAuth } from "@/components/providers/auth-provider";
 import { formatDate } from "@/lib/utils";
 import { Brain, Rocket, Zap, Target, Layers, Cpu } from "lucide-react";
@@ -494,15 +495,12 @@ export default function HomeClient({
                   </ul>
                 </div>
 
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex flex-col sm:flex-row gap-2">
-                  <input 
-                    type="email" 
-                    placeholder="輸入您的 Email 地址" 
-                    className="flex-1 bg-transparent border-0 px-6 py-4 text-white placeholder:text-slate-500 focus:outline-none focus:ring-0"
+                <div className="w-full">
+                  <NewsletterForm 
+                    variant="hero" 
+                    placeholder="輸入您的 Email 地址"
+                    buttonText="訂閱電子報"
                   />
-                  <Button className="h-14 px-8 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all">
-                    訂閱電子報
-                  </Button>
                 </div>
               </div>
             </div>
